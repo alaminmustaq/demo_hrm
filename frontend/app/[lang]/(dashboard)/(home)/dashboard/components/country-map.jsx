@@ -12,6 +12,8 @@ import world from "../../../(map)/maps-vector/worldmap.json";
 import { VectorMap } from "@south-paw/react-vector-maps";
 import Link from "next/link";
 
+
+
 const CountryMap = () => {
   const country = [
     { name: "United State", image: img1, user: 32900 },
