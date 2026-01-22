@@ -34,7 +34,7 @@ const SidebarLogo = ({ hovered }) => {
 
             {(!collapsed || hovered) && (
               <div className="flex-1 text-xl text-primary font-semibold">
-                {data?.data?.setting?.company_name ?? "Matendes"}
+                {data?.data?.setting?.company_name ?? "ORPP"}
               </div>
             )}
           </Link>
