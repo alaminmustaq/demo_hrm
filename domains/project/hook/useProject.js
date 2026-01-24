@@ -365,7 +365,7 @@ export const useProject = () => {
                         salary_type: emp.salary_type || "monthly",
                         basic_salary: parseFloat(emp.basic_salary) || 0,
                         status: emp.status || "active",
-                        shift_id: emp.shift_id.value || null 
+                        shift_id: emp?.shift_id?.value || null 
                     })
                 ); 
 
