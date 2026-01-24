@@ -50,17 +50,17 @@ export const employApi = createApi({
         employFetch: builder.query({
             query: ({ id, params } = {}) => {
                 const filterParams = {
-                    ...getFilterParams(),         // your default filters
-                    ...params,               // merge extra params
-                    ...(id ? { id } : {}),        // include id if it exists
+                    ...getFilterParams(),
+                    ...params,
+                    ...(id ? { id } : {}),
                     employeePageKey: true,
                     include_inactive_employees: true,
-                }; 
+                };
 
                 return {
                     url: "hrm/employees",
                     method: "GET",
-                    params,
+                    params: filterParams, // ✅ FIX
                 };
             },
             providesTags: ["Employ"],

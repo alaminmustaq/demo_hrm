@@ -14,7 +14,8 @@ const employCreate = () => {
     useEffect(() => {
         actions.onEdit(employData);
     }, [employData]);
-
+    console.log(employState);
+    
     return (
         <PageLayout>
             <Card>

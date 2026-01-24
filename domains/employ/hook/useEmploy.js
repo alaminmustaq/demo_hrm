@@ -176,7 +176,7 @@ export const useEmploy = () => {
         },
         onEdit: (mainData) => {
             const data = mainData.employee;
-
+            console.log(mainData);
             if (!data) return;
 
             form.reset({
