@@ -131,3 +131,64 @@ export function getFilterParams(params = false) {
 
     return url.searchParams.get(params);
 }
+
+export function prepareFilterPayload(values, searchParams) {
+    const payload = {};
+
+        Object.entries(values).forEach(([key, value]) => {
+            if (
+                value === null ||
+                value === undefined ||
+                value === "" ||
+                (Array.isArray(value) && !value.length)
+            ) {
+                return;
+            }
+
+            payload[key] = normalizeFieldValue(value);
+        });
+
+        /* ===============================
+        Special business rules
+      =============================== */
+
+        // Employment status logic
+        if (payload.employment_status === "inactive") {
+            payload.include_inactive_employees = true;
+        }
+
+        // Dynamically fill missing fields from URL
+        for (const key of searchParams.keys()) {
+            const cleanKey = key.replace(/\[\]$/, ""); // remove brackets if multi-select
+            if (!(cleanKey in payload)) {
+                const valuesFromUrl = searchParams.getAll(key);
+                if (valuesFromUrl.length) {
+                    payload[cleanKey] =
+                        valuesFromUrl.length > 1
+                            ? valuesFromUrl
+                            : valuesFromUrl[0];
+                }
+            }
+        }
+
+        return payload;
+}
+
+export function normalizeFieldValue(value) {
+    // Multi-select: [{label, value}, ...]
+    if (Array.isArray(value)) {
+        return value.map((item) =>
+            typeof item === "object" && item !== null && "value" in item
+                ? item.value
+                : item,
+        );
+    }
+
+    // Single select: {label, value}
+    if (typeof value === "object" && value !== null && "value" in value) {
+        return value.value;
+    }
+
+    // Primitive: string | number | boolean | date
+    return value;
+}

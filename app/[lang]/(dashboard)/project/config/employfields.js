@@ -98,6 +98,19 @@ const fields = (form) => {
                     rules: { required: "End date is required" },
                 },
                 {
+                    name: "shift_id",
+                    type: "async-select",
+                    label: "Shift *",
+                    colSpan: "col-span-12 md:col-span-6", 
+                    // loadOptions: ["shifts", "shifts", "shiftTemplate"],
+                    loadOptions: [
+                        "schedule/employee_shift",
+                        "employee_shifts",
+                        "shiftSearchTemplate",
+                    ],
+                    rules: { required: "Shift is required" }
+                },
+                {
                     name: "salary_type",
                     type: "select",
                     label: "Salary Type *",

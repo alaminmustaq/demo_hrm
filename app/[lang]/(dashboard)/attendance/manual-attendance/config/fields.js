@@ -130,6 +130,32 @@ const fields = (actions,form) => {
             rules: { required: "Attendance scope is required" },
         }, 
         {
+            name: "salary_type", // renamed
+            type: "select",
+            label: "Salary type *",
+            colSpan: "col-span-12 md:col-span-6",
+            options: [
+                {
+                    label: "Hourly",
+                    value: "hourly",
+                },
+                {
+                    label: "Monthly",
+                    value: "monthly",
+                },
+            ],
+            // handleChange: (e) => {   
+            //     form.setValue('attendance_scope', e.value);
+
+            //     // Clear single_attendance if switching to all attendance
+            //     if (e.value === "all_attendance") {
+            //         form.setValue('single_attendance', null);
+            //     }
+            // },
+            disabled:form.watch('id'),
+            rules: { required: "Salary type is required" },
+        }, 
+        {
             name: "single_attendance",
             type: "async-select",
             label: "Single Attendance",

@@ -12,6 +12,7 @@ import {
     formReset,
     normalizeSelectValues,
     buildFormData,
+    prepareFilterPayload, 
 } from "@/utility/helpers";
 
 import {
@@ -20,13 +21,21 @@ import {
     departmentSearchTemplate,
     jobPositionsTemplate,
     roleTemplate,
+    employeeTypeSearchTemplate,
+    shiftSearchTemplate,
 } from "@/utility/templateHelper";
 import { getFilterParams } from "@/utility/helpers";
 import { useMemo } from "react";
+import { useState } from "react";
 import { useAppDispatch } from "@/hooks/use-redux";
 import { setEmployData } from "../model/employSlice";
-import { useParams } from "next/navigation";
-import { useRouter } from "next/navigation";
+import {
+    useRouter,
+    usePathname,
+    useParams,
+    useSearchParams,
+} from "next/navigation";
+// import { useRouter } from "next/navigation";
 import useAuth from "@/domains/auth/hooks/useAuth";
 
 export const useEmploy = () => {
@@ -36,19 +45,38 @@ export const useEmploy = () => {
     const [EmployCreate] = useEmployCreateMutation();
     const [EmployUpdate] = useEmployUpdateMutation();
     const [EmployDelete] = useEmployDeleteMutation();
+
+    // For Filters
+    const [filters, setFilters] = useState({});
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const pageFromUrl = searchParams.get("page") || "1";
+    const queryParams = {
+        ...filters,
+        ...(pageFromUrl ? { page: pageFromUrl } : {}),
+    };
+
     const {
         data: employ,
         refetch,
         isFetching,
-    } = useEmployFetchQuery(id ? { id } : "", {
-        refetchOnMountOrArgChange: true,
-        selectFromResult: (result) => {
-            if (result?.data) {
-                dispatch(setEmployData(result?.data?.data));
-            }
-            return result;
+    } = useEmployFetchQuery(
+        id
+            ? {
+                  id,
+                  params: queryParams, // <-- send your queryParams here
+              }
+            : { params: queryParams }, // if id is not present, still send params
+        {
+            refetchOnMountOrArgChange: true,
+            selectFromResult: (result) => {
+                if (result?.data) {
+                    dispatch(setEmployData(result.data.data));
+                }
+                return result;
+            },
         },
-    });
+    );
 
     const { user } = useAuth();
 
@@ -64,12 +92,11 @@ export const useEmploy = () => {
     const defaultValue = {
         branch_id:
             branchSearchTemplate(
-                user?.employee?.branch ? [user?.employee?.branch] : []
+                user?.employee?.branch ? [user?.employee?.branch] : [],
             )?.at(0) ?? null,
 
         salary_type: "monthly",
         employment_status: "probation",
-        employment_type: "permanent",
         work_mode: "office",
     };
 
@@ -82,10 +109,32 @@ export const useEmploy = () => {
         refetch,
         pagination: employ?.data?.pagination || {},
         isFetching,
-    };
+    }; 
 
     const actions = {
         // ✅ New: fetch single employee by ID
+        onFilter: async (data) => {
+            const values = form.getValues(); 
+            const payload = prepareFilterPayload(values, searchParams);
+            // console.log(payload);
+            setFilters(payload);
+
+            const params = new URLSearchParams({
+                // ...Object.fromEntries(searchParams),
+                page: "1",
+            });
+
+            Object.entries(payload).forEach(([key, value]) => {
+                if (Array.isArray(value)) {
+                    value.forEach((v) => params.append(`${key}[]`, v));
+                } else {
+                    params.set(key, value);
+                }
+            });
+
+            router.push(`${pathname}`);
+            refetch();
+        },
         getEmploy: async (id = null) => {
             // ✅ trigger API
             const result = await triggerGetEmploy({ id: id }).unwrap();
@@ -105,13 +154,15 @@ export const useEmploy = () => {
                     "role_id",
                     "marital_status",
                     "blood_group",
+                    "employee_type_id",
+                    "employee_shift_id",
                 ]);
                 const preparedDataWithInactive = {
                     ...preparedData,
                     include_inactive_employees: true,
                 };
                 const response = await EmployCreate(
-                    buildFormData(preparedDataWithInactive)
+                    buildFormData(preparedDataWithInactive),
                 ).unwrap();
                 if (response.message == "Employee created successfully") {
                     toast.success("Employee Created Successfully");
@@ -134,15 +185,15 @@ export const useEmploy = () => {
 
                 branch_id:
                     branchSearchTemplate(data?.branch ? [data.branch] : [])?.at(
-                        0
+                        0,
                     ) ?? null,
                 department_id:
                     departmentSearchTemplate(
-                        data?.department ? [data.department] : []
+                        data?.department ? [data.department] : [],
                     )?.at(0) ?? null,
                 job_position_id:
                     jobPositionsTemplate(
-                        data?.job_position ? [data.job_position] : []
+                        data?.job_position ? [data.job_position] : [],
                     )?.at(0) ?? null,
                 manager_id: data?.manager?.id ?? null,
                 employee_code: data?.employee_code || "",
@@ -216,8 +267,19 @@ export const useEmploy = () => {
                     data?.employment_info?.termination_reason || "",
                 employment_status:
                     data?.employment_info?.employment_status || "probation",
-                employment_type:
-                    data?.employment_info?.employment_type || "permanent",
+                // employment_type:
+                //     data?.employment_info?.employment_type || "permanent",
+                // =============== Employment Info ===============
+                employee_type_id:
+                    employeeTypeSearchTemplate(
+                        data?.employee_type ? [data.employee_type] : [],
+                    )?.at(0) ?? null,
+
+                employee_shift_id:
+                    shiftSearchTemplate(
+                        data?.employee_shift ? [data.employee_shift] : [],
+                    )?.at(0) ?? null,
+
                 work_mode: data?.employment_info?.work_mode || "office",
                 basic_salary: data?.employment_info?.basic_salary || "",
                 salary_type: data?.employment_info?.salary_type || "monthly",
@@ -273,7 +335,6 @@ export const useEmploy = () => {
             // updateUser({ id, ...data });
             // form.reset();
         },
-
         onUpdate: async (data) => {
             try {
                 let { openModel, id, ...other } = data;
@@ -286,6 +347,8 @@ export const useEmploy = () => {
                     "role_id",
                     "marital_status",
                     "blood_group",
+                    "employee_type_id",
+                    "employee_shift_id",
                 ]);
                 const preparedDataWithInactive = {
                     ...preparedData,
@@ -327,7 +390,20 @@ export const useEmploy = () => {
                 toast.error(message);
             }
         },
+        // Filter Clear button
+        onReset: async () => {
+            // Reset all fields: arrays → [], others → ""
+            const resetValues = Object.fromEntries(
+                Object.entries(employState.form.getValues()).map(
+                    ([key, value]) => [key, Array.isArray(value) ? [] : ""]
+                )
+            );
 
+            employState.form.reset(resetValues);
+
+            // Trigger validation / update for all fields
+            await employState.form.trigger();
+        },
     };
 
     return {

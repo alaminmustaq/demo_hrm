@@ -19,6 +19,7 @@ import {
     employTemplate,
     clientTemplate,
     branchSearchTemplate,
+    shiftSearchTemplate,
 } from "@/utility/templateHelper";
 import toast from "react-hot-toast";
 import { useForm } from "react-hook-form";
@@ -121,7 +122,8 @@ export const useProject = () => {
                         status: emp.status,
                     })
                 );
-
+                console.log(assignedEmployees);
+                
                 // Prepare payload with normalized data
                 const preparedData = normalizeSelectValues(
                     {
@@ -131,7 +133,7 @@ export const useProject = () => {
                     },
                     ["job_position_id", "client_id", "branch_id"]
                 );
-
+                console.log(preparedData);
                 const response = await projectCreate(preparedData).unwrap();
 
                 if (response.success) {
@@ -270,6 +272,8 @@ export const useProject = () => {
             }
         },
         setAssignEmployModel: async (data) => {
+            
+            console.log("Hello");
             // Prevent multiple simultaneous calls
             if (isLoadingAssignEmployees.current) {
                 console.log(
@@ -306,6 +310,7 @@ export const useProject = () => {
                         projectData?.assigned_employees?.map((assignedEmp) => ({
                             id: assignedEmp.employee_id,
                             employee_id: assignedEmp.employee_id,
+                            shift_id: assignedEmp.shift ? (shiftSearchTemplate([assignedEmp.shift])?.at(0) ?? null) : null,
                             name: assignedEmp.name,
                             start_date: assignedEmp.start_date,
                             end_date: assignedEmp.end_date,
@@ -346,6 +351,7 @@ export const useProject = () => {
         },
 
         onUpdateAssignedEmployees: async (data) => {
+            
             try {
                 const { id, assignEmployees, ...payload } = data;
 
@@ -359,8 +365,12 @@ export const useProject = () => {
                         salary_type: emp.salary_type || "monthly",
                         basic_salary: parseFloat(emp.basic_salary) || 0,
                         status: emp.status || "active",
+                        shift_id: emp.shift_id.value || null 
                     })
-                );
+                ); 
+
+                console.log(data);
+                console.log(assignedEmployees);
 
                 console.log(
                     "Updating assigned employees only:",

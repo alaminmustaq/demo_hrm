@@ -1,5 +1,3 @@
-
-
 export const commonSearchTemplate = (res) => {
     return res.map((data) => ({
         label: data.name + " (" + data.code + ")",
@@ -97,8 +95,10 @@ export const toolSearchTemplate = (res) => {
     return res.map((tool) => ({
         label: tool.name + (tool.sku ? " (" + tool.sku + ")" : ""),
         value: tool.id,
-        stock: tool?.company_stock ? tool?.company_stock?.quantity ?? 0 : 0,
-        unit_price: tool?.company_stock ? tool?.company_stock?.unit_price ?? 0 : 0,
+        stock: tool?.company_stock ? (tool?.company_stock?.quantity ?? 0) : 0,
+        unit_price: tool?.company_stock
+            ? (tool?.company_stock?.unit_price ?? 0)
+            : 0,
     })); // what is stored in form
 };
 
@@ -122,32 +122,38 @@ export const bankTemplate = (res) => {
             label: `Bank: ${item.bank_name} | Branch: ${branch.branch_name} | Account Holder: ${branch.account_holder_name} | Account No: ${branch.account_no}`,
             value: branch.id,
             bank_id: item.id,
-        }))
+        })),
     );
 };
 export const leaveReasonSearchTemplate = (data = []) =>
     data.map((item) => ({
         value: item.id,
         label: item.name,
-    })); 
-export const leaveTypeSearchTemplate = (data = []) =>{ 
-        
-        return data.map((item) => ({
-            value: item.id,
-            label: item.name,
-        }));
-    }
-export const holidayTypeSearchTemplate = (data = []) =>{ 
-        
-        return data.map((item) => ({
-            value: item.id,
-            label: item.name,
-        }));
-    }
-    export const holidayReasonSearchTemplate = (data = []) =>
+    }));
+export const leaveTypeSearchTemplate = (data = []) => {
+    return data.map((item) => ({
+        value: item.id,
+        label: item.name,
+    }));
+};
+export const holidayTypeSearchTemplate = (data = []) => {
+    return data.map((item) => ({
+        value: item.id,
+        label: item.name,
+    }));
+};
+export const holidayReasonSearchTemplate = (data = []) =>
     data.map((item) => ({
         value: item.id,
         label: item.name,
     }));
-
-
+export const employeeTypeSearchTemplate = (data = []) =>
+    data.map((item) => ({
+        value: item.id,
+        label: item.name,
+    })); 
+export const shiftSearchTemplate = (data = []) =>
+    data.map((item) => ({
+        value: item.id,
+        label: item.name,
+    }));

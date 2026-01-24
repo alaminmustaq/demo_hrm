@@ -55,10 +55,11 @@ export const useReport = (route = "reports", file_route="reports") => {
         isFetching,
         form,
     };
-    console.log(reportState);
+    // console.log(reportState);
     
     const handleReportAction = async (type) => {
         const values = form.getValues();
+        console.log(values);
         const payload = prepareReportPayload(values, searchParams);
 
         switch (type) {

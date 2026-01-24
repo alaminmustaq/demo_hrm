@@ -33,6 +33,8 @@ import {
     BadgeDollarSignIcon,
     Type,
     CalendarClock,
+    CalendarSearch,
+    CalendarPlus,
     Landmark,
 } from "lucide-react";
 
@@ -85,6 +87,12 @@ export const menusConfig = {
             icon: Users,
             child: [
                 {
+                    title: "Employee Type",
+                    href: "/employee-types",
+                    icon: UserCircle,
+                    permission: "view-employee",
+                },
+                {
                     title: "Employee list",
                     href: "/employees",
                     icon: UserCircle,
@@ -124,7 +132,7 @@ export const menusConfig = {
         },
         {
             title: "Leave",
-            icon: CalendarClock,
+            icon: CalendarPlus,
             child: [
                 {
                     title: "Leave Type",
@@ -148,7 +156,7 @@ export const menusConfig = {
         },
         {
             title: "Holiday",
-            icon: CalendarClock,
+            icon: CalendarSearch,
             child: [
                 {
                     title: "Holiday Type",
@@ -173,6 +181,24 @@ export const menusConfig = {
                     href: "/holiday/holiday-posting",
                     icon: UserCircle,
                     permission: "view-holiday",
+                },
+            ],
+        },
+        {
+            title: "Schedule",
+            icon: CalendarClock,
+            child: [
+                {
+                    title: "Employee Shift",
+                    href: "/schedule/employee-shift",
+                    icon: UserCircle,
+                    permission: "view-holiday-type",
+                },
+                {
+                    title: "Schedule Setup",
+                    href: "/schedule/schedule-setup",
+                    icon: UserCircle,
+                    permission: "view-holiday-type",
                 },
             ],
         },
@@ -502,6 +528,12 @@ export const menusConfig = {
                 icon: Users,
                 child: [
                     {
+                        title: "Employee Type",
+                        href: "/employee-types",
+                        icon: UserCircle,
+                        permission: "view-employee",
+                    },
+                    {
                         title: "Employee list",
                         href: "/employees",
                         icon: UserCircle,
@@ -541,7 +573,7 @@ export const menusConfig = {
             },
             {
                 title: "Leave",
-                icon: CalendarClock,
+                icon: CalendarPlus,
                 child: [
                     {
                         title: "Leave Type",
@@ -565,7 +597,7 @@ export const menusConfig = {
             },
             {
                 title: "Holiday",
-                icon: CalendarClock,
+                icon: CalendarSearch,
                 child: [
                     {
                         title: "Holiday Type",
@@ -590,6 +622,24 @@ export const menusConfig = {
                         href: "/holiday/holiday-posting",
                         icon: UserCircle,
                         permission: "view-holiday",
+                    },
+                ],
+            },
+            {
+                title: "Schedule",
+                icon: CalendarClock,
+                child: [
+                    {
+                        title: "Employee Shift",
+                        href: "/schedule/employee-shift",
+                        icon: UserCircle,
+                        permission: "view-holiday-type",
+                    },
+                    {
+                        title: "Schedule Setup",
+                        href: "/schedule/schedule-setup",
+                        icon: UserCircle,
+                        permission: "view-holiday-type",
                     },
                 ],
             },
@@ -909,6 +959,12 @@ export const menusConfig = {
                 isHide: false,
                 child: [
                     {
+                        title: "Employee Type",
+                        href: "/employee-types",
+                        icon: UserCircle,
+                        permission: "view-employee",
+                    },
+                    {
                         title: "Employee list",
                         href: "/employees",
                         icon: UserCircle,
@@ -948,7 +1004,7 @@ export const menusConfig = {
             },
             {
                 title: "Leave",
-                icon: CalendarClock,
+                icon: CalendarPlus,
                 isOpen: false,
                 isHide: false,
                 child: [
@@ -974,7 +1030,7 @@ export const menusConfig = {
             },
             {
                 title: "Holiday",
-                icon: CalendarClock,
+                icon: CalendarSearch,
                 isOpen: false,
                 isHide: false,
                 child: [
@@ -1001,6 +1057,26 @@ export const menusConfig = {
                         href: "/holiday/holiday-posting",
                         icon: UserCircle,
                         permission: "view-holiday",
+                    },
+                ],
+            },
+            {
+                title: "Schedule",
+                icon: CalendarClock,
+                isOpen: false,
+                isHide: false,
+                child: [
+                    {
+                        title: "Employee Shift",
+                        href: "/schedule/employee-shift",
+                        icon: UserCircle,
+                        permission: "view-holiday-type",
+                    },
+                    {
+                        title: "Schedule Setup",
+                        href: "/schedule/schedule-setup",
+                        icon: UserCircle,
+                        permission: "view-holiday-type",
                     },
                 ],
             },

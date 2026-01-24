@@ -89,7 +89,7 @@ const fields = () => {
                     type: "input",
                     label: "Preferred Name",
                     colSpan: "col-span-12 md:col-span-4",
-                }, 
+                },
             ],
         },
 
@@ -144,7 +144,7 @@ const fields = () => {
                     type: "date",
                     label: "Passport Expiry",
                     colSpan: "col-span-12 md:col-span-4",
-                }, 
+                },
                 {
                     name: "marital_status",
                     type: "select",
@@ -155,7 +155,7 @@ const fields = () => {
                         { label: "Married", value: "married" },
                         { label: "Divorced", value: "divorced" },
                         { label: "Widowed", value: "widowed" },
-                    ], 
+                    ],
                 },
                 {
                     name: "blood_group",
@@ -171,9 +171,8 @@ const fields = () => {
                         { label: "O-", value: "O-" },
                         { label: "AB+", value: "AB+" },
                         { label: "AB-", value: "AB-" },
-                    ], 
+                    ],
                 },
-
             ],
         },
 
@@ -346,6 +345,31 @@ const fields = () => {
             description: "Hire and contract details",
             fields: [
                 {
+                    name: "employee_type_id",
+                    type: "async-select",
+                    label: "Employee Type *",
+                    colSpan: "col-span-12 md:col-span-4",
+                    loadOptions: [
+                        "schedule/employee_type",
+                        "employee_types",
+                        "employeeTypeSearchTemplate",
+                    ],
+                    rules: { required: "Employee type is required" },
+                },
+                {
+                    name: "employee_shift_id",
+                    type: "async-select",
+                    label: "Shift *",
+                    colSpan: "col-span-12 md:col-span-4",
+                    // loadOptions: ["shifts", "shifts", "shiftTemplate"],
+                    loadOptions: [
+                        "schedule/employee_shift",
+                        "employee_shifts",
+                        "shiftSearchTemplate",
+                    ],
+                    rules: { required: "Shift is required" },
+                },
+                {
                     name: "hire_date",
                     type: "date",
                     label: "Hire Date *",
@@ -437,20 +461,6 @@ const fields = () => {
                         { label: "On Leave", value: "on_leave" },
                     ],
                     rules: { required: "Status required" },
-                },
-                {
-                    name: "employment_type",
-                    type: "select",
-                    label: "Employment Type *",
-                    colSpan: "col-span-12 md:col-span-4",
-                    options: [
-                        { label: "Permanent", value: "permanent" },
-                        { label: "Temporary", value: "temporary" },
-                        { label: "Contract", value: "contract" },
-                        { label: "Internship", value: "internship" },
-                        { label: "Consultant", value: "consultant" },
-                    ],
-                    rules: { required: "Employment type required" },
                 },
                 {
                     name: "work_mode",
