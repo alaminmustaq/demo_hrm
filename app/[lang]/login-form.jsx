@@ -53,10 +53,12 @@ const LogInForm = () => {
 
     const toggleVisibility = () => setIsVisible(!isVisible);
 
+    const [remember, setRemember] = React.useState(false);
+
     const onSubmit = (data) => {
         startTransition(async () => {
             try {
-                const result = await login(data.email, data.password);
+                const result = await login(data.email, data.password, remember);
                 if (result.success) {
                     toast.success("Login Successful");
                     window.location.assign("/dashboard");
@@ -156,6 +158,8 @@ const LogInForm = () => {
                             size="sm"
                             className="border-default-300 mt-[1px]"
                             id="isRemebered"
+                            checked={remember}
+                            onCheckedChange={setRemember}
                         />
                         <Label
                             htmlFor="isRemebered"

@@ -24,30 +24,18 @@ export default function fields(defaultForm) {
             rules: {
                 required: "Financial Type  is required",
             },
-            handleChange: (e, form, filed) => {
-                form?.setValue("financial_type", e.value);
-                const data = defaultForm.watch(); // get all current form data
+            handleChange: (e, formOrIndex) => {
+                defaultForm.setValue("financial_type", e?.value);
+                const data = defaultForm.watch();
 
-                // Destructure to remove `transaction_details`
                 const { transaction_details, ...rest } = data;
-
-                // Reset the form with remaining fields
                 defaultForm.reset({
                     ...rest,
                     transaction_details: [],
                 });
+                return e?.value;
             },
         },
-
-        {
-            name: "project_id",
-            type: "async-select",
-            label: "Project",
-            loadOptions: ["/projects", "projects", "projectTemplate"],
-            placeholder: "Select project",
-            colSpan: "col-span-12 md:col-span-4",
-        },
-
         {
             name: "branch_id",
             type: "async-select",
@@ -58,7 +46,20 @@ export default function fields(defaultForm) {
                 "branchSearchTemplate",
             ],
             placeholder: "Branch",
-            colSpan: "col-span-12 md:col-span-6",
+            colSpan: "col-span-12 md:col-span-4",
+        },
+        {
+            name: "project_id",
+            type: "async-select",
+            label: "Project",
+            loadOptions: [
+                "/projects",
+                "projects",
+                "projectTemplate",
+                "branch_id",
+            ],
+            placeholder: "Select project",
+            colSpan: "col-span-12 md:col-span-4",
         },
 
         {
@@ -123,7 +124,7 @@ export default function fields(defaultForm) {
             type: "textarea",
         },
 
-        // Details (match finance_record_details migration)
+        // Details (match finance_record_details migration) – one row table layout
         {
             name: "transaction_details",
             type: "group-form",
@@ -141,22 +142,19 @@ export default function fields(defaultForm) {
                     placeholder: "Employees",
                     visibility:
                         defaultForm.watch("financial_type") === "expense",
-                    colSpan: "col-span-12 sm:col-span-6 md:col-span-3",
+                    colSpan: "col-span-12 sm:col-span-4 md:col-span-3",
                     rules: {
                         required: "Employ  is required",
                     },
                 },
-
                 {
                     name: "rec_payment_type_id",
                     type: "async-select",
                     label: "Expense/Income *",
-                    type: "async-select",
-                    colSpan: `col-span-6 ${
+                    colSpan:
                         defaultForm.watch("financial_type") === "expense"
-                            ? "md:col-span-2"
-                            : "md:col-span-4"
-                    } `,
+                            ? "col-span-12 sm:col-span-4 md:col-span-2"
+                            : "col-span-12 sm:col-span-4 md:col-span-4",
                     loadOptions: [
                         "finance/rec-payment-types",
                         "items",
@@ -168,29 +166,26 @@ export default function fields(defaultForm) {
                         required: "Rec_pay_type  is required",
                     },
                 },
-
                 {
                     name: "amount",
                     type: "number",
                     label: "Add amount *",
                     placeholder: "Enter amount",
-                    colSpan: `col-span-6 ${
+                    colSpan:
                         defaultForm.watch("financial_type") === "expense"
-                            ? "md:col-span-2"
-                            : "md:col-span-3"
-                    } `,
+                            ? "col-span-12 sm:col-span-4 md:col-span-2"
+                            : "col-span-12 sm:col-span-4 md:col-span-3",
                     rules: {
                         required: "Amount is required",
                         min: { value: 1, message: "Amount must be at least 1" },
                     },
                 },
-
                 {
                     name: "description",
                     type: "textarea",
                     label: "Description",
                     placeholder: "Enter description",
-                    colSpan: "col-span-10 sm:col-span-6 md:col-span-4",
+                    colSpan: "col-span-12 sm:col-span-4 md:col-span-4",
                     rows: 1,
                 },
             ],

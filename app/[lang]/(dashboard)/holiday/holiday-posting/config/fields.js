@@ -1,17 +1,20 @@
 import useAuth from "@/domains/auth/hooks/useAuth";
-import { branchSearchTemplate,departmentSearchTemplate } from "@/utility/templateHelper";
+import {
+    branchSearchTemplate,
+    departmentSearchTemplate,
+} from "@/utility/templateHelper";
 
 const fields = (form, actions) => {
     const { user } = useAuth();
     const roleLevel = user?.user?.roles?.[0]?.level ?? null;
-    const level = Number(roleLevel); 
+    const level = Number(roleLevel);
 
     // console.log(user?.employee?.id);
-    
+
     const currentUserType = form.watch("user_type");
 
     if (currentUserType !== "responsible") {
-        form.setValue("user_type", "responsible", { shouldDirty: false }); 
+        form.setValue("user_type", "responsible", { shouldDirty: false });
     }
 
     const employee_user_type = form.watch("employee_user_type");
@@ -101,8 +104,7 @@ const fields = (form, actions) => {
                         ? "department_id"
                         : "project_id"
                 }`,
-                "employee_type", 
-                
+                "employee_type",
             ],
         ];
     }
@@ -124,23 +126,23 @@ const fields = (form, actions) => {
             disabled: isView,
             rules: {
                 required: "End date is required",
-                 validate: (value) => {
-            const startDate = form.watch("start_date");
-            if (!startDate || !value) return true;
+                validate: (value) => {
+                    const startDate = form.watch("start_date");
+                    if (!startDate || !value) return true;
 
-            const startYear = new Date(startDate).getFullYear();
-            const endYear   = new Date(value).getFullYear();
+                    const startYear = new Date(startDate).getFullYear();
+                    const endYear = new Date(value).getFullYear();
 
-            if (startYear !== endYear) {
-                return "Start date and end date must be in the same year";
-            }
+                    if (startYear !== endYear) {
+                        return "Start date and end date must be in the same year";
+                    }
 
-            if (new Date(value) < new Date(startDate)) {
-                return "End date cannot be before start date";
-            }
+                    if (new Date(value) < new Date(startDate)) {
+                        return "End date cannot be before start date";
+                    }
 
-            return true;
-        },
+                    return true;
+                },
             },
         },
         {
@@ -204,26 +206,28 @@ const fields = (form, actions) => {
                 form.setValue(
                     "branch_id",
                     branchSearchTemplate(
-                        user?.employee?.branch ? [user?.employee?.branch] : []
-                    )?.at(0) ?? null
+                        user?.employee?.branch ? [user?.employee?.branch] : [],
+                    )?.at(0) ?? null,
                 );
                 form.setValue(
                     "department_id",
                     departmentSearchTemplate(
-                        user?.employee?.department ? [user?.employee?.department] : []
-                    )?.at(0) ?? null
-                ); 
+                        user?.employee?.department
+                            ? [user?.employee?.department]
+                            : [],
+                    )?.at(0) ?? null,
+                );
                 console.log(user?.employee);
-                
+
                 form.setValue("employee_ids", null);
-                form.setValue("project_id", null); 
+                form.setValue("project_id", null);
                 if (e.value === "project_holiday") {
                     form.setValue("employee_id", user?.employee?.id);
                 }
-                if(form.watch('type') == 'company_holiday'){
-                    form.setValue("employee_type", 'company');
-                }else if(form.watch('type') == 'project_holiday'){
-                    form.setValue("employee_type", 'project');
+                if (form.watch("type") == "company_holiday") {
+                    form.setValue("employee_type", "company");
+                } else if (form.watch("type") == "project_holiday") {
+                    form.setValue("employee_type", "project");
                 }
             },
             rules: { required: "Type is required" },
@@ -255,7 +259,7 @@ const fields = (form, actions) => {
         {
             name: "department_id",
             type: "async-select",
-            label: `Department${user?.employee?.department ? " *":""}`,
+            label: `Department${user?.employee?.department ? " *" : ""}`,
             visibility: form.watch("type") === "company_holiday",
             loadOptions: [
                 "organization/departments",
@@ -289,7 +293,7 @@ const fields = (form, actions) => {
             placeholder: "Optional",
             colSpan: "col-span-12 md:col-span-4",
             disabled: isView || isEdit,
-        }, 
+        },
         {
             name: "status",
             type: "select",
@@ -310,7 +314,8 @@ const fields = (form, actions) => {
             disabled: isView,
             visibility:
                 (form.watch("type") === "company_holiday" ||
-                form.watch("type") === "project_holiday") && !isEdit,
+                    form.watch("type") === "project_holiday") &&
+                !isEdit,
             handleChange: (e, form) => {
                 // Trigger the paginated component to load data
                 // Use setTimeout to ensure component is mounted
@@ -322,7 +327,7 @@ const fields = (form, actions) => {
                         form._paginatedLoaders.employee_details();
                     } else {
                         console.warn(
-                            "Paginated loader not found for employee_details"
+                            "Paginated loader not found for employee_details",
                         );
                     }
                 }, 100);
@@ -343,10 +348,10 @@ const fields = (form, actions) => {
         {
             name: "employee_details",
             type: "group-form-paginated",
-            label: "Employee Details",
+            label: "Employee Details (Check to exclude employee from holiday)",
             colSpan: "col-span-12",
             addButtonLabel: false,
-            isDelete: false, 
+            isDelete: false,
             maxHeight: "400px",
             loadMoreLabel: "Load More Employees",
             perPage: 10,
@@ -354,9 +359,10 @@ const fields = (form, actions) => {
             enableSearch: true,
             searchPlaceholder: "Search employees by name, email, or phone...",
 
-            visibility: 
+            visibility:
                 (form.watch("type") === "company_holiday" ||
-                form.watch("type") === "project_holiday") && !isEdit,
+                    form.watch("type") === "project_holiday") &&
+                !isEdit,
             loadOptions: preparedLoadOptions,
             fields: [
                 {

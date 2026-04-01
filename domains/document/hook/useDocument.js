@@ -5,6 +5,7 @@ import {
     handleServerValidationErrors,
     formReset,
     normalizeSelectValues,
+    prepareFilterPayload,
 } from "@/utility/helpers";
 import {
     documentTypeTemplate,
@@ -22,10 +23,18 @@ import {
     useLazyGetDocumentByIdQuery,
 } from "../services/documentApi";
 import { setDocumentData } from "../model/documentSlice";
-import { useParams } from "next/navigation";
+// import { useParams } from "next/navigation";
 import useAuth from "@/domains/auth/hooks/useAuth";
+import { useState, useEffect } from "react";
+import {
+    useRouter,
+    usePathname,
+    useParams,
+    useSearchParams,
+} from "next/navigation";
 
 export const useDocument = () => {
+    const router = useRouter();
     const dispatch = useAppDispatch();
 
     // Mutations
@@ -34,6 +43,15 @@ export const useDocument = () => {
     const [deleteDocument] = useDeleteDocumentMutation();
     const [deleteDocumentDetail] = useDeleteDocumentDetailMutation();
     const { id } = useParams();
+    // For Filters
+    const [filters, setFilters] = useState({});
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const pageFromUrl = searchParams.get("page") || "1";
+    const queryParams = {
+        ...filters,
+        ...(pageFromUrl ? { page: pageFromUrl } : {}),
+    };
     // Queries
     // const { data: documentResponse, refetch, isFetching } = useFetchDocumentsQuery();
     const [triggerGetDocumentById] = useLazyGetDocumentByIdQuery();
@@ -41,16 +59,24 @@ export const useDocument = () => {
         data: documentResponse,
         refetch,
         isFetching,
-    } = useFetchDocumentsQuery(id ? { id } : "", {
-        refetchOnMountOrArgChange: true,
-        selectFromResult: (result) => {
-            if (result?.data) {
-                dispatch(setDocumentData(result?.data?.data));
-            }
-
-            return result;
+        isSuccess,
+    } = useFetchDocumentsQuery(
+        id
+            ? {
+                  id,
+                  params: queryParams,
+              }
+            : { params: queryParams },
+        {
+            refetchOnMountOrArgChange: true,
         },
-    });
+    );
+
+    useEffect(() => {
+        if (isSuccess && documentResponse?.data) {
+            dispatch(setDocumentData(documentResponse.data.data));
+        }
+    }, [isSuccess, documentResponse?.data, dispatch]);
 
     const { user } = useAuth();
 
@@ -99,7 +125,7 @@ export const useDocument = () => {
     const defaultValue = {
         branch_id:
             branchSearchTemplate(
-                user?.employee?.branch ? [user?.employee?.branch] : []
+                user?.employee?.branch ? [user?.employee?.branch] : [],
             )?.at(0) ?? null,
     };
 
@@ -112,6 +138,41 @@ export const useDocument = () => {
     };
 
     const actions = {
+        //  FILTER
+        onFilter: async () => {
+            const values = form.getValues();
+            const payload = prepareFilterPayload(values, searchParams);
+
+            setFilters(payload);
+
+            const params = new URLSearchParams({ page: "1" });
+
+            Object.entries(payload).forEach(([key, value]) => {
+                if (Array.isArray(value)) {
+                    value.forEach((v) => params.append(`${key}[]`, v));
+                } else {
+                    params.set(key, value);
+                }
+            });
+
+            router.push(`${pathname}`);
+            refetch();
+        },
+
+        //  RESET
+        onReset: async () => {
+            const resetValues = Object.fromEntries(
+                Object.entries(form.getValues()).map(([key, value]) => [
+                    key,
+                    Array.isArray(value) ? [] : "",
+                ]),
+            );
+
+            form.reset(resetValues);
+            setFilters({});
+            await form.trigger();
+            refetch();
+        },
         onCreate: async (data) => {
             try {
                 const { openModel, document, ...payload } = data;
@@ -141,12 +202,12 @@ export const useDocument = () => {
                         ) {
                             formData.append(
                                 `document[${index}][file]`,
-                                normalizedItem[key]
+                                normalizedItem[key],
                             );
                         } else if (normalizedItem[key] != null) {
                             formData.append(
                                 `document[${index}][${key}]`,
-                                normalizedItem[key]
+                                normalizedItem[key],
                             );
                         }
                     });
@@ -171,7 +232,7 @@ export const useDocument = () => {
                     title: detail.title,
                     type:
                         documentTypeTemplate(
-                            detail.type ? [detail.type] : []
+                            detail.type ? [detail.type] : [],
                         )?.at(0) ?? null,
                     expiry_date: detail.expiry_date,
                     expiry_warning: detail.expiry_warning,
@@ -179,7 +240,7 @@ export const useDocument = () => {
                     file_name: detail.file_name,
                     status: detail.status,
                     file: detail.file_url || null,
-                })
+                }),
             );
 
             const resetData = {
@@ -190,18 +251,18 @@ export const useDocument = () => {
                 document_type_id: data.document_type?.id || "",
                 employee_id:
                     employTemplate(data.employee ? [data.employee] : [])?.at(
-                        0
+                        0,
                     ) ?? null,
                 branch_id:
                     branchSearchTemplate(data.branch ? [data.branch] : [])?.at(
-                        0
+                        0,
                     ) ?? null,
                 client_id:
                     clientTemplate(data.client ? [data.client] : [])?.at(0) ??
                     null,
                 project_id:
                     projectTemplate(data.project ? [data.project] : [])?.at(
-                        0
+                        0,
                     ) ?? null,
                 status: data.status ? "active" : "inactive",
                 document: documentDetails,
@@ -237,12 +298,12 @@ export const useDocument = () => {
                         ) {
                             formData.append(
                                 `document[${index}][file]`,
-                                normalizedItem[key]
+                                normalizedItem[key],
                             );
                         } else if (normalizedItem[key] != null) {
                             formData.append(
                                 `document[${index}][${key}]`,
-                                normalizedItem[key]
+                                normalizedItem[key],
                             );
                         }
                     });
@@ -282,7 +343,7 @@ export const useDocument = () => {
         onDeleteDetail: async (documentId, detailId) => {
             if (
                 !confirm(
-                    "Are you sure you want to delete this document detail?"
+                    "Are you sure you want to delete this document detail?",
                 )
             )
                 return;
@@ -299,7 +360,7 @@ export const useDocument = () => {
                 }
             } catch (error) {
                 toast.error(
-                    "Something went wrong while deleting document detail."
+                    "Something went wrong while deleting document detail.",
                 );
             }
         },

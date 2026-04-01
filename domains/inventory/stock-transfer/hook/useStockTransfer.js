@@ -2,6 +2,7 @@ import {
     handleServerValidationErrors,
     formReset,
     normalizeSelectValues,
+    prepareFilterPayload,
 } from "@/utility/helpers";
 import {
     useCreateStockTransferMutation,
@@ -18,15 +19,33 @@ import {
 } from "@/utility/templateHelper";
 import { useForm, useFieldArray } from "react-hook-form";
 import useAuth from "@/domains/auth/hooks/useAuth";
+import { useState } from "react";
+import {
+    useRouter,
+    usePathname,
+    useParams,
+    useSearchParams,
+} from "next/navigation";
+
 
 export const useStockTransfer = () => {
+     const router = useRouter();
      const { user } = useAuth();
     // ===== RTK Query hooks =====
     const [createStockTransfer] = useCreateStockTransferMutation();
     const [updateStockTransfer] = useUpdateStockTransferMutation();
     const [deleteStockTransfer] = useDeleteStockTransferMutation();
+    // For Filters
+    const [filters, setFilters] = useState({});
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const pageFromUrl = searchParams.get("page") || "1";
+    const queryParams = {
+        ...filters,
+        ...(pageFromUrl ? { page: pageFromUrl } : {}),
+    };
     const { data: stockTransferData, refetch, isFetching } =
-        useFetchStockTransfersQuery();
+        useFetchStockTransfersQuery({ params: queryParams });
 
     // ===== React Hook Form setup =====
     const form = useForm({
@@ -58,6 +77,41 @@ export const useStockTransfer = () => {
 
     // ===== Actions =====
     const actions = {
+         //  FILTER
+        onFilter: async () => {
+            const values = form.getValues();
+            const payload = prepareFilterPayload(values, searchParams);
+
+            setFilters(payload);
+
+            const params = new URLSearchParams({ page: "1" });
+
+            Object.entries(payload).forEach(([key, value]) => {
+                if (Array.isArray(value)) {
+                    value.forEach((v) => params.append(`${key}[]`, v));
+                } else {
+                    params.set(key, value);
+                }
+            });
+
+            router.push(`${pathname}`);
+            refetch();
+        },
+
+        //  RESET
+        onReset: async () => {
+            const resetValues = Object.fromEntries(
+                Object.entries(form.getValues()).map(([key, value]) => [
+                    key,
+                    Array.isArray(value) ? [] : "",
+                ]),
+            );
+
+            form.reset(resetValues);
+            setFilters({});
+            await form.trigger();
+            refetch();
+        },
         onCreate: async (data) => {
             try {
                 const { openModel, tool_id, ...other } = data;

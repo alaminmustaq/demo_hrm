@@ -2,6 +2,7 @@ import {
     handleServerValidationErrors,
     formReset,
     normalizeSelectValues,
+    prepareFilterPayload,
 } from "@/utility/helpers";
 import {
     useCreateDamageMutation,
@@ -19,13 +20,34 @@ import {
 import { useForm } from "react-hook-form";
 import { useFieldArray } from "react-hook-form";
 import useAuth from "@/domains/auth/hooks/useAuth";
+import { useState } from "react";
+import {
+    useRouter,
+    usePathname,
+    useParams,
+    useSearchParams,
+} from "next/navigation";
 
 export const useDamage = () => {
+    const router = useRouter();
     const { user } = useAuth();
     const [createDamage] = useCreateDamageMutation();
     const [updateDamage] = useUpdateDamageMutation();
     const [deleteDamage] = useDeleteDamageMutation();
-    const { data: damagesData, refetch, isFetching } = useFetchDamagesQuery();
+    // For Filters
+    const [filters, setFilters] = useState({});
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const pageFromUrl = searchParams.get("page") || "1";
+    const queryParams = {
+        ...filters,
+        ...(pageFromUrl ? { page: pageFromUrl } : {}),
+    };
+    const {
+        data: damagesData,
+        refetch,
+        isFetching,
+    } = useFetchDamagesQuery({ params: queryParams });
 
     const form = useForm({
         mode: "onBlur",
@@ -44,7 +66,7 @@ export const useDamage = () => {
     const defaultValue = {
         branch_id:
             branchSearchTemplate(
-                user?.employee?.branch ? [user?.employee?.branch] : []
+                user?.employee?.branch ? [user?.employee?.branch] : [],
             )?.at(0) ?? null,
     };
 
@@ -66,6 +88,41 @@ export const useDamage = () => {
     };
 
     const actions = {
+        //  FILTER
+        onFilter: async () => {
+            const values = form.getValues();
+            const payload = prepareFilterPayload(values, searchParams);
+
+            setFilters(payload);
+
+            const params = new URLSearchParams({ page: "1" });
+
+            Object.entries(payload).forEach(([key, value]) => {
+                if (Array.isArray(value)) {
+                    value.forEach((v) => params.append(`${key}[]`, v));
+                } else {
+                    params.set(key, value);
+                }
+            });
+
+            router.push(`${pathname}`);
+            refetch();
+        },
+
+        //  RESET
+        onReset: async () => {
+            const resetValues = Object.fromEntries(
+                Object.entries(form.getValues()).map(([key, value]) => [
+                    key,
+                    Array.isArray(value) ? [] : "",
+                ]),
+            );
+
+            form.reset(resetValues);
+            setFilters({});
+            await form.trigger();
+            refetch();
+        },
         onCreate: async (data) => {
             try {
                 const { openModel, ...payload } = data;
@@ -73,7 +130,7 @@ export const useDamage = () => {
                 const currentPayload = normalizeSelectValues(payload, [
                     "company_id",
                     "warehouse_id",
-                     "branch_id",
+                    "branch_id",
                 ]);
 
                 const response = await createDamage(currentPayload).unwrap();
@@ -147,13 +204,13 @@ export const useDamage = () => {
                 warehouse_id: item.warehouse
                     ? { label: item.warehouse.name, value: item.warehouse.id }
                     : item.warehouse_id
-                    ? { label: "Unknown", value: item.warehouse_id }
-                    : null,
+                      ? { label: "Unknown", value: item.warehouse_id }
+                      : null,
                 branch_id: item.branch
                     ? { label: item.branch.name, value: item.branch.id }
                     : item.branch_id
-                    ? { label: "Unknown", value: item.branch_id }
-                    : null,
+                      ? { label: "Unknown", value: item.branch_id }
+                      : null,
 
                 note: item.note || "",
                 damageTools: damageTools,

@@ -8,9 +8,9 @@ export const purchaseApi = createApi({
   tagTypes: ["Purchase"],
   endpoints: (builder) => ({ 
     fetchPurchases: builder.query({
-      query: () => ({
+      query: ({ params } = {}) => ({
         url: "inventory/purchases",
-        params: { ...getFilterParams() },
+        params: { ...getFilterParams(), ...params },
       }),
       providesTags: ["Purchase"],
     }),

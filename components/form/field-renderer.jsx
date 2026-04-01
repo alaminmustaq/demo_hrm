@@ -22,6 +22,11 @@ import DynamicAsyncSelect from "./dynamic-async-select";
 import GroupFormPaginatedField from "./group-form-paginated";
 import { translate } from "@/lib/utils";
 import Select from "react-select";
+import dynamic from "next/dynamic";
+const RichTextEditor = dynamic(
+    () => import("@/components/ui/RichTextEditor"),
+    { ssr: false },
+);
 import { useSelector } from "react-redux";
 /**
  * FieldConfig (JS docs):
@@ -63,31 +68,37 @@ const FieldRenderer = ({ fieldConfig, form }) => {
         visibility = true,
         addButtonLabel = "Add More",
         index = false,
-        getValue, 
+        getValue,
         defaultValue,
         rows,
         firstChildren,
-        lastChildren
-    } = fieldConfig; 
-    
+        lastChildren,
+    } = fieldConfig;
+
     const translation_state = useSelector((state) => state.auth.translation);
-    label = translate(label,translation_state);
-    placeholder = translate(placeholder,translation_state); 
-    
-
-
+    label = translate(label, translation_state);
+    placeholder = translate(placeholder, translation_state);
 
     const styles = {
         option: (provided, state) => ({
             ...provided,
             fontSize: "14px",
         }),
+        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+        menu: (base) => ({ ...base, zIndex: 9999 }),
     };
 
     // If visibility is false, don't render the field
-    if (visibility === false) {
-        return null;
-    }
+    const isVisible =
+        typeof visibility === "function" ? visibility(index) : visibility;
+
+    if (!isVisible) return null;
+
+    // Support disabled as function (form, index, name) for per-row logic
+    const resolvedDisabled =
+        typeof disabled === "function"
+            ? disabled(form, index, name)
+            : !!disabled;
 
     return (
         <FormField
@@ -100,19 +111,28 @@ const FieldRenderer = ({ fieldConfig, form }) => {
                     "border-destructive focus:border-destructive": showError,
                 });
 
-                // number coercion for RHF
+                // number coercion for RHF – use "" when empty so field stays cleared (undefined can trigger reset)
                 const numberOnChange =
                     type === "number"
                         ? (e) => {
-                              const raw = e.target.value;
-                              const parsed =
-                                  raw === "" ? undefined : Number(raw);
-                              const finalValue = Number.isNaN(parsed)
-                                  ? undefined
-                                  : parsed;
+                              const raw = e?.target?.value ?? "";
+                              const isEmpty = raw === "";
+                              const parsed = isEmpty ? null : Number(raw);
+                              const finalValue =
+                                  !isEmpty && !Number.isNaN(parsed)
+                                      ? parsed
+                                      : isEmpty
+                                        ? ""
+                                        : field.value;
                               field.onChange(finalValue);
                               if (handleChange) {
-                                  handleChange(finalValue, form, index);
+                                  handleChange(
+                                      finalValue === ""
+                                          ? undefined
+                                          : finalValue,
+                                      form,
+                                      index,
+                                  );
                               }
                           }
                         : undefined;
@@ -126,13 +146,13 @@ const FieldRenderer = ({ fieldConfig, form }) => {
                             {type === "textarea" ? (
                                 <Textarea
                                     placeholder={placeholder}
-                                    disabled={disabled}
+                                    disabled={resolvedDisabled}
                                     rows={rows}
                                     {...field}
                                     {...(inputProps || {})}
                                     className={cn(
                                         baseInputClass,
-                                        inputProps?.className
+                                        inputProps?.className,
                                     )}
                                 />
                             ) : type === "select" ? (
@@ -142,21 +162,26 @@ const FieldRenderer = ({ fieldConfig, form }) => {
                                     value={options.find(
                                         (opt) =>
                                             opt[optionValue ?? "value"] ===
-                                            field.value
+                                            field.value,
                                     )}
                                     styles={styles}
                                     name="clear"
-                                    menuPlacement={menuPlacement} 
-                                    defaultValue={defaultValue ? defaultValue : []}
+                                    menuPlacement={menuPlacement}
+                                    defaultValue={
+                                        defaultValue ? defaultValue : []
+                                    }
                                     options={options || []}
-                                    isDisabled={!!disabled}
+                                    isDisabled={!!resolvedDisabled}
                                     getOptionLabel={getOptLabel}
                                     getOptionValue={getOptValue}
                                     id
                                     isClearable
                                     onChange={(selectedOption) => {
                                         const value = handleChange
-                                            ? handleChange(selectedOption)
+                                            ? handleChange(
+                                                  selectedOption,
+                                                  index,
+                                              )
                                             : selectedOption?.[
                                                   optionValue ?? "value"
                                               ];
@@ -164,7 +189,11 @@ const FieldRenderer = ({ fieldConfig, form }) => {
 
                                         // If handleChange exists, also call it with form
                                         if (handleChange) {
-                                            handleChange(selectedOption, form);
+                                            handleChange(
+                                                selectedOption,
+                                                form,
+                                                index,
+                                            );
                                         }
                                     }}
                                 />
@@ -179,8 +208,8 @@ const FieldRenderer = ({ fieldConfig, form }) => {
                                                   field.value.includes(
                                                       opt[
                                                           optionValue ?? "value"
-                                                      ]
-                                                  )
+                                                      ],
+                                                  ),
                                               )
                                             : []
                                     }
@@ -188,7 +217,7 @@ const FieldRenderer = ({ fieldConfig, form }) => {
                                     name="clear"
                                     menuPlacement={menuPlacement}
                                     options={options || []}
-                                    isDisabled={!!disabled}
+                                    isDisabled={!!resolvedDisabled}
                                     getOptionLabel={getOptLabel}
                                     getOptionValue={getOptValue}
                                     isClearable
@@ -202,7 +231,7 @@ const FieldRenderer = ({ fieldConfig, form }) => {
                                                   (opt) =>
                                                       opt[
                                                           optionValue ?? "value"
-                                                      ]
+                                                      ],
                                               )
                                             : [];
                                         const finalValue = handleChange
@@ -226,7 +255,7 @@ const FieldRenderer = ({ fieldConfig, form }) => {
                                                 handleChange(checked, form);
                                             }
                                         }}
-                                        disabled={disabled}
+                                        disabled={resolvedDisabled}
                                         id={`${name}-checkbox`}
                                     />
                                     {placeholder ? (
@@ -242,7 +271,7 @@ const FieldRenderer = ({ fieldConfig, form }) => {
                                 <div>
                                     <Input
                                         type="file"
-                                        disabled={disabled}
+                                        disabled={resolvedDisabled}
                                         {...(inputProps || {})}
                                         onChange={(e) => {
                                             const file =
@@ -261,7 +290,7 @@ const FieldRenderer = ({ fieldConfig, form }) => {
                                                 <a
                                                     href={
                                                         field.value.startsWith(
-                                                            "http"
+                                                            "http",
                                                         )
                                                             ? field.value
                                                             : `${window.location.origin}${field.value}`
@@ -318,7 +347,7 @@ const FieldRenderer = ({ fieldConfig, form }) => {
                                     firstChildren={firstChildren}
                                     lastChildren={lastChildren}
                                     handleChange={handleChange}
-                                    isDisabled={!!disabled}
+                                    isDisabled={!!resolvedDisabled}
                                 />
                             ) : type === "multi-async-select" ? (
                                 <DynamicAsyncSelect
@@ -328,7 +357,7 @@ const FieldRenderer = ({ fieldConfig, form }) => {
                                     form={form}
                                     handleChange={handleChange}
                                     isMulti={true}
-                                    isDisabled={!!disabled}
+                                    isDisabled={!!resolvedDisabled}
                                 />
                             ) : type === "group-form" ? (
                                 <GroupFormField
@@ -342,23 +371,27 @@ const FieldRenderer = ({ fieldConfig, form }) => {
                                     form={form}
                                     addButtonLabel={addButtonLabel}
                                 />
+                            ) : type === "rich-text" ? (
+                                <RichTextEditor
+                                    value={field.value || ""}
+                                    onChange={(html) => field.onChange(html)}
+                                    placeholder={placeholder}
+                                    disabled={resolvedDisabled}
+                                />
                             ) : type === "text-display" ? (
                                 <div>
                                     {getValue ? getValue(form) : field.value}
                                 </div>
                             ) : type === "button" ? (
                                 <Button
-                                type="button"
-                                disabled={disabled}
-                                onClick={(e) => {
-                                 
+                                    type="button"
+                                    disabled={resolvedDisabled}
+                                    onClick={(e) => {
                                         handleChange(e, form);
-                                    
-                                }}
-                                
-                            >
-                                {placeholder || label || "Button"}
-                            </Button>
+                                    }}
+                                >
+                                    {placeholder || label || "Button"}
+                                </Button>
                             ) : (
                                 <>
                                     <Input
@@ -366,43 +399,50 @@ const FieldRenderer = ({ fieldConfig, form }) => {
                                             type === "password"
                                                 ? "password"
                                                 : type === "email"
-                                                ? "email"
-                                                : type === "date"
-                                                ? "date"
-                                                : type === "number"
-                                                ? "text" // keep text to allow empty string; we coerce manually
-                                                : "text"
+                                                  ? "email"
+                                                  : type === "date"
+                                                    ? "date"
+                                                    : type === "number"
+                                                      ? "text" // text so backspace can clear; we coerce to number
+                                                      : "text"
                                         }
                                         placeholder={placeholder}
-                                        disabled={disabled}
-                                        {...field}
+                                        disabled={resolvedDisabled}
+                                        ref={field.ref}
+                                        onBlur={field.onBlur}
+                                        name={field.name}
                                         {...(inputProps || {})}
+                                        value={
+                                            type === "number"
+                                                ? field.value === "" ||
+                                                  field.value == null
+                                                    ? ""
+                                                    : String(field.value)
+                                                : (field.value ?? "")
+                                        }
                                         onChange={
                                             numberOnChange ||
                                             ((e) => {
-                                                field.onChange(e);
+                                                const val =
+                                                    e?.target?.value ?? "";
+                                                field.onChange(val);
                                                 if (handleChange) {
                                                     handleChange(
-                                                        e.target.value,
+                                                        val,
                                                         form,
-                                                        index
+                                                        index,
                                                     );
                                                 }
                                             })
                                         }
                                         className={cn(
                                             baseInputClass,
-                                            inputProps?.className
+                                            inputProps?.className,
                                         )}
                                         inputMode={
                                             type === "number"
                                                 ? "numeric"
                                                 : inputProps?.inputMode
-                                        }
-                                        pattern={
-                                            type === "number"
-                                                ? "[0-9]*"
-                                                : inputProps?.pattern
                                         }
                                     />
 
@@ -460,10 +500,16 @@ const GroupFormField = ({ fieldConfig, form, addButtonLabel }) => {
             {fields.map((item, index) => (
                 <div
                     key={item.id}
-                    className="grid grid-cols-12 gap-4"
+                    className="grid grid-cols-12 gap-4 items-center"
                 >
                     {childFields.map((childField) => {
                         const fieldName = `${name}.${index}.${childField.name}`;
+                        if (
+                            typeof childField.visibility === "function" &&
+                            childField.visibility() === false
+                        ) {
+                            return null;
+                        }
                         if (childField.visibility === false) {
                             return null;
                         }
@@ -472,7 +518,7 @@ const GroupFormField = ({ fieldConfig, form, addButtonLabel }) => {
                             <div
                                 key={childField.name}
                                 className={cn(
-                                    childField.colSpan || "col-span-12"
+                                    childField.colSpan || "col-span-12",
                                 )}
                             >
                                 <FieldRenderer
@@ -487,7 +533,7 @@ const GroupFormField = ({ fieldConfig, form, addButtonLabel }) => {
                         );
                     })}
                     {isDelete && (
-                        <div className="col-span-2 md:col-span-1 flex justify-end">
+                        <div className="col-span-2 md:col-span-1 flex justify-end items-center">
                             <Button
                                 type="button"
                                 size="sm"

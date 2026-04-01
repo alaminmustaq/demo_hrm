@@ -9,8 +9,8 @@ import { useSalary } from "@/domains/salary/hook/useSalary";
 import ApprovedFields from "./config/ApprovedFields";
 
 const SalaryGeneratePage = () => {
-    const { actions, salaryState } = useSalary(); // Use salaryState from hook
-
+    const { actions, salaryState } = useSalary();
+    
     return (
         <PageLayout>
             <BasicTableLayout
@@ -19,11 +19,13 @@ const SalaryGeneratePage = () => {
                         label: "Generate Salary",
                         action: actions.onGenerateSalary,
                         permission: "generate_salary",
+                        color: 'primary'
                     },
                     ApprovedSalary: {
                         label: "Approved Salary",
                         action: actions.onApproveSalary,
                         permission: "approved-salary",
+                        color: 'success'
                     },
                 }}
                 columns={columns(actions)}
@@ -60,12 +62,12 @@ const SalaryGeneratePage = () => {
                         : "Generate"
                 }
                 cancelLabel="Cancel"
-                size="2xl"
+                size="3xl"
                 form={salaryState.form}
                 fields={
                     salaryState?.form?.watch("model_for") == "approved_salary"
-                        ? ApprovedFields(actions)
-                        : fields(actions)
+                        ? ApprovedFields(salaryState.form,actions)
+                        : fields(salaryState.form,actions)
                 }
                 actions={actions}
             />

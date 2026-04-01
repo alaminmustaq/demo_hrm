@@ -8,9 +8,9 @@ export const leaveTypesApi = createApi({
   tagTypes: ["leave-type"],
   endpoints: (builder) => ({
     fetchLeave: builder.query({
-      query: () => ({
+      query: ({ params } = {}) => ({
         url: "leave/leave_type",
-        params: { ...getFilterParams() },
+        params: { ...getFilterParams(), ...params },
       }),
       providesTags: ["leave-type"],
     }),

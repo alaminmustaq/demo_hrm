@@ -2,13 +2,14 @@ import {
     handleServerValidationErrors,
     formReset,
     normalizeSelectValues,
+    prepareFilterPayload,
 } from "@/utility/helpers";
-import { 
+import {
     branchSearchTemplate,
     projectTemplate,
     departmentSearchTemplate,
     employeeTypeSearchTemplate,
-    shiftSearchTemplate
+    shiftSearchTemplate,
 } from "@/utility/templateHelper";
 import {
     useCreateScheduleMutation,
@@ -21,14 +22,34 @@ import {
 import toast from "react-hot-toast";
 import { useForm, useFieldArray } from "react-hook-form";
 import { useState } from "react";
+import {
+    useRouter,
+    usePathname,
+    useParams,
+    useSearchParams,
+} from "next/navigation";
 
 export const useScheduleSetup = () => {
+    const router = useRouter();
     const [createSchedule] = useCreateScheduleMutation();
     const [updateSchedule] = useUpdateScheduleMutation();
     const [deleteSchedule] = useDeleteScheduleMutation();
     const [deleteGroupSchedule] = useDeleteGroupScheduleMutation();
     const [approveSchedule] = useApproveScheduleMutation();
-    const { data: scheduleData, refetch, isFetching } = useFetchScheduleQuery();
+    // For Filters
+    const [filters, setFilters] = useState({});
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const pageFromUrl = searchParams.get("page") || "1";
+    const queryParams = {
+        ...filters,
+        ...(pageFromUrl ? { page: pageFromUrl } : {}),
+    };
+    const {
+        data: scheduleData,
+        refetch,
+        isFetching,
+    } = useFetchScheduleQuery({ params: queryParams });
 
     const form = useForm({
         mode: "onBlur",
@@ -59,6 +80,41 @@ export const useScheduleSetup = () => {
     };
 
     const actions = {
+        //  FILTER
+        onFilter: async () => {
+            const values = form.getValues();
+            const payload = prepareFilterPayload(values, searchParams);
+
+            setFilters(payload);
+
+            const params = new URLSearchParams({ page: "1" });
+
+            Object.entries(payload).forEach(([key, value]) => {
+                if (Array.isArray(value)) {
+                    value.forEach((v) => params.append(`${key}[]`, v));
+                } else {
+                    params.set(key, value);
+                }
+            });
+
+            router.push(`${pathname}`);
+            refetch();
+        },
+
+        //  RESET
+        onReset: async () => {
+            const resetValues = Object.fromEntries(
+                Object.entries(form.getValues()).map(([key, value]) => [
+                    key,
+                    Array.isArray(value) ? [] : "",
+                ]),
+            );
+
+            form.reset(resetValues);
+            setFilters({});
+            await form.trigger();
+            refetch();
+        },
         formatDateForForm: (dateString) => {
             if (!dateString) return "";
             try {
@@ -108,19 +164,22 @@ export const useScheduleSetup = () => {
                 shift_id: item.shift_id || null,
                 company_id: item.company_id || null,
                 branch_id: item.branch
-                    ? branchSearchTemplate([item.branch])?.at(0) ?? null
+                    ? (branchSearchTemplate([item.branch])?.at(0) ?? null)
                     : null,
                 department_id: item.department
-                    ? departmentSearchTemplate([item.department])?.at(0) ?? null
+                    ? (departmentSearchTemplate([item.department])?.at(0) ??
+                      null)
                     : null,
                 employee_type_id: item.employee_type
-                    ? employeeTypeSearchTemplate([item.employee_type])?.at(0) ?? null
+                    ? (employeeTypeSearchTemplate([item.employee_type])?.at(
+                          0,
+                      ) ?? null)
                     : null,
                 shift_id: item.shift
-                    ? shiftSearchTemplate([item.shift])?.at(0) ?? null
+                    ? (shiftSearchTemplate([item.shift])?.at(0) ?? null)
                     : null,
                 project_id: item.project
-                    ? projectTemplate([item.project])?.at(0) ?? null
+                    ? (projectTemplate([item.project])?.at(0) ?? null)
                     : null,
                 in_time: item.in_time || "",
                 late_time: item.late_time || "",
@@ -144,19 +203,22 @@ export const useScheduleSetup = () => {
                 shift_id: item.shift_id || null,
                 company_id: item.company_id || null,
                 branch_id: item.branch
-                    ? branchSearchTemplate([item.branch])?.at(0) ?? null
+                    ? (branchSearchTemplate([item.branch])?.at(0) ?? null)
                     : null,
                 department_id: item.department
-                    ? departmentSearchTemplate([item.department])?.at(0) ?? null
+                    ? (departmentSearchTemplate([item.department])?.at(0) ??
+                      null)
                     : null,
                 employee_type_id: item.employee_type
-                    ? employeeTypeSearchTemplate([item.employee_type])?.at(0) ?? null
+                    ? (employeeTypeSearchTemplate([item.employee_type])?.at(
+                          0,
+                      ) ?? null)
                     : null,
                 shift_id: item.shift
-                    ? shiftSearchTemplate([item.shift])?.at(0) ?? null
+                    ? (shiftSearchTemplate([item.shift])?.at(0) ?? null)
                     : null,
                 project_id: item.project
-                    ? projectTemplate([item.project])?.at(0) ?? null
+                    ? (projectTemplate([item.project])?.at(0) ?? null)
                     : null,
                 in_time: item.in_time || "",
                 late_time: item.late_time || "",
@@ -172,7 +234,6 @@ export const useScheduleSetup = () => {
             form.setValue("openModel", true);
         },
 
-
         onUpdate: async (data) => {
             try {
                 const { openModel, id, ...payload } = data;
@@ -181,7 +242,7 @@ export const useScheduleSetup = () => {
                     Object.entries(payload).map(([key, value]) => [
                         key,
                         normalizeFieldValueRecursive(value),
-                    ])
+                    ]),
                 );
 
                 if (preparedData.reason_id === "other") {
@@ -203,7 +264,8 @@ export const useScheduleSetup = () => {
 
         onDelete: async (id) => {
             try {
-                if (!confirm("Are you sure you want to delete this schedule?")) return;
+                if (!confirm("Are you sure you want to delete this schedule?"))
+                    return;
 
                 await deleteSchedule(id).unwrap();
 
@@ -212,7 +274,9 @@ export const useScheduleSetup = () => {
             } catch (error) {
                 console.error("Delete schedule error:", error);
                 toast.error(
-                    error?.data?.message || error?.message || "Something went wrong while deleting schedule."
+                    error?.data?.message ||
+                        error?.message ||
+                        "Something went wrong while deleting schedule.",
                 );
             }
         },
@@ -246,11 +310,18 @@ export const useScheduleSetup = () => {
             return Array.from(value).map(normalizeFieldValueRecursive);
         }
         if (typeof value === "object" && value !== null) {
-            if ("value" in value && Object.keys(value).length === 2 && "label" in value) {
+            if (
+                "value" in value &&
+                Object.keys(value).length === 2 &&
+                "label" in value
+            ) {
                 return value.value;
             }
             return Object.fromEntries(
-                Object.entries(value).map(([k, v]) => [k, normalizeFieldValueRecursive(v)])
+                Object.entries(value).map(([k, v]) => [
+                    k,
+                    normalizeFieldValueRecursive(v),
+                ]),
             );
         }
         return value;

@@ -1,12 +1,32 @@
 import toast from "react-hot-toast";
 import useAuth from "@/domains/auth/hooks/useAuth";
-import {
-    branchSearchTemplate, 
-} from "@/utility/templateHelper";
+import { branchSearchTemplate } from "@/utility/templateHelper";
 
-const fields = (actions,form) => {
-    const {user} = useAuth(); 
-    
+const fields = (actions, form) => {
+    const { user } = useAuth();
+
+    if (form?.watch("model_for") === "single_edit") {
+        return [
+            {
+                name: "check_in_time",
+                type: "date",
+                label: "Check-in Time *",
+                placeholder: "Select check-in time",
+                colSpan: "col-span-12 md:col-span-6",
+                inputProps: { type: "time" },
+                rules: { required: "Check-in time is required" },
+            },
+            {
+                name: "check_out_time",
+                type: "date",
+                label: "Check-out Time *",
+                placeholder: "Select check-out time",
+                colSpan: "col-span-12 md:col-span-6",
+                inputProps: { type: "time" },
+            },
+        ];
+    }
+
     return [
         {
             name: "attendance_type",
@@ -23,13 +43,18 @@ const fields = (actions,form) => {
                     value: "project_attendance",
                 },
             ],
-            handleChange: (e) => {   
-                form.setValue('attendance_type',e.value)
-                form.setValue('branch_id',branchSearchTemplate(user?.employee?.branch ? [user?.employee?.branch] : [])?.at(0) ?? null)
-                form.setValue('department_id',null)
-                form.setValue('project_id',null) 
+            handleChange: (e) => {
+                form.setValue("attendance_type", e.value);
+                form.setValue(
+                    "branch_id",
+                    branchSearchTemplate(
+                        user?.employee?.branch ? [user?.employee?.branch] : [],
+                    )?.at(0) ?? null,
+                );
+                form.setValue("department_id", null);
+                form.setValue("project_id", null);
             },
-            disabled:form.watch('id'),
+            disabled: form.watch("id"),
             rules: { required: "Status is required" },
         },
         {
@@ -41,7 +66,7 @@ const fields = (actions,form) => {
             visibility: form?.watch("model_for") == "adjust_hours",
             options: [
                 { label: "Increment", value: "increment" },
-                { label: "Decrement", value: "decrement" }, 
+                { label: "Decrement", value: "decrement" },
             ],
             rules: { required: "Adjustment type is required" },
         },
@@ -54,17 +79,15 @@ const fields = (actions,form) => {
                 "organization/branches",
                 "branches",
                 "branchSearchTemplate",
-            
             ],
             placeholder: "Select",
             colSpan: "col-span-12 md:col-span-6",
-            handleChange: (e) => {  
-            
-                form.setValue('branch_id',e) 
+            handleChange: (e) => {
+                form.setValue("branch_id", e);
                 actions.onAttendanceTypeChange();
             },
-            disabled:form.watch('id'),
-        },  
+            disabled: form.watch("id"),
+        },
         {
             name: "department_id",
             type: "async-select",
@@ -74,14 +97,13 @@ const fields = (actions,form) => {
                 "organization/departments",
                 "departments",
                 "departmentSearchTemplate",
-                "branch_id"
+                "branch_id",
             ],
-            handleChange: (e) => {  
-              
-                form.setValue('department_id',e) 
+            handleChange: (e) => {
+                form.setValue("department_id", e);
                 actions.onAttendanceTypeChange();
             },
-            disabled:form.watch('id'),
+            disabled: form.watch("id"),
             placeholder: "Optional",
             colSpan: "col-span-12 md:col-span-6",
         },
@@ -90,16 +112,12 @@ const fields = (actions,form) => {
             type: "async-select",
             label: "Project",
             visibility: form.watch("attendance_type") === "project_attendance",
-            loadOptions: [
-                "projects",
-                "projects",
-                "projectTemplate",
-            ],
-            handleChange: (e) => {  
-                form.setValue('project_id',e) 
+            loadOptions: ["projects", "projects", "projectTemplate"],
+            handleChange: (e) => {
+                form.setValue("project_id", e);
                 actions.onAttendanceTypeChange();
             },
-            disabled:form.watch('id'),
+            disabled: form.watch("id"),
             placeholder: "Optional",
             colSpan: "col-span-12 md:col-span-6",
         },
@@ -118,17 +136,17 @@ const fields = (actions,form) => {
                     value: "single_attendance",
                 },
             ],
-            handleChange: (e) => {   
-                form.setValue('attendance_scope', e.value);
+            handleChange: (e) => {
+                form.setValue("attendance_scope", e.value);
 
                 // Clear single_attendance if switching to all attendance
                 if (e.value === "all_attendance") {
-                    form.setValue('single_attendance', null);
+                    form.setValue("single_attendance", null);
                 }
             },
-            disabled:form.watch('id'),
+            disabled: form.watch("id"),
             rules: { required: "Attendance scope is required" },
-        }, 
+        },
         {
             name: "salary_type", // renamed
             type: "select",
@@ -144,7 +162,7 @@ const fields = (actions,form) => {
                     value: "monthly",
                 },
             ],
-            // handleChange: (e) => {   
+            // handleChange: (e) => {
             //     form.setValue('attendance_scope', e.value);
 
             //     // Clear single_attendance if switching to all attendance
@@ -152,9 +170,9 @@ const fields = (actions,form) => {
             //         form.setValue('single_attendance', null);
             //     }
             // },
-            disabled:form.watch('id'),
+            disabled: form.watch("id"),
             rules: { required: "Salary type is required" },
-        }, 
+        },
         {
             name: "single_attendance",
             type: "async-select",
@@ -164,35 +182,31 @@ const fields = (actions,form) => {
                 "hrm/filter-employees",
                 "employees",
                 "employTemplate",
-                ["department_id","branch_id",'project_id']
-              
+                ["department_id", "branch_id", "project_id"],
             ],
-            handleChange: (value) => {  
-                const existingEmployees =
-                        form.getValues("employees") || [];
-                        console.log(existingEmployees);
-                        
-                    const exists = existingEmployees.some(
-                        (emp) => emp.employee_id === value.value
-                    );
+            handleChange: (value) => {
+                const existingEmployees = form.getValues("employees") || [];
+                console.log(existingEmployees);
 
-                    if (exists) {
-                        toast.error("Employee already assigned!");
-                    } else {
-                        // Append new employee assignment with pre-filled data
-                        form.fields.append({
-                            name: `${value.label}`,
-                            employee_id: value.value,
-                            check_in_time: "",
-                            check_out_time: "",
-                        })
-                    }
+                const exists = existingEmployees.some(
+                    (emp) => emp.employee_id === value.value,
+                );
 
+                if (exists) {
+                    toast.error("Employee already assigned!");
+                } else {
+                    // Append new employee assignment with pre-filled data
+                    form.fields.append({
+                        name: `${value.label}`,
+                        employee_id: value.value,
+                        check_in_time: "",
+                        check_out_time: "",
+                    });
+                }
             },
             placeholder: "Select employee",
-            colSpan: "col-span-12 md:col-span-6",  
+            colSpan: "col-span-12 md:col-span-6",
         },
-
 
         // Global Settings Section
         {
@@ -262,7 +276,7 @@ const fields = (actions,form) => {
             type: "group-form",
             label: "Employee Attendance",
             placeholder: "Add employees for attendance",
-            colSpan: `col-span-12 ${form.watch('attendance_scope') == 'all_attendance' ? 'hidden':''}`,
+            colSpan: `col-span-12 ${form.watch("attendance_scope") == "all_attendance" ? "hidden" : ""}`,
             addButtonLabel: false,
             fields: [
                 {

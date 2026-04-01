@@ -90,86 +90,88 @@ const calculateTotalHours = (checkIn, checkOut) => {
     return Math.round(hours * 100) / 100; // 2 decimals
 };
 
-// Column definitions
 const columns = (actions) => [
     {
-        accessorKey: "global_date",
-        header: ({ column }) => (
-            <div className="flex items-center gap-2">
-              
-                Date
-            </div>
-        ),
-        cell: ({ row }) => (
-            <span className="text-xs text-muted-foreground">
-                {formatDate(row.original?.global_date)}
-            </span>
-        ),
-    },
-    {
-        accessorKey: "adjustment_type",
-        header: ({ column }) => (
-            <div className="flex items-center gap-2">
-              
-                Adjustment type
-            </div>
-        ),
-        cell: ({ row }) => (
-            <span className="text-xs text-muted-foreground">
-                {row.original?.attendances[0]?.adjustment_type || 'Manual Attendance'}
-            </span>
-        ),
-    },
-
-    {
-        accessorKey: "timeRange",
-        header: ({ column }) => (
-            <div className="flex items-center gap-2">
-             
-             Global Time Range
-            </div>
-        ),
+        accessorKey: "employee",
+        header: "Employee",
         cell: ({ row }) => {
-            const checkIn = row.original?.global_check_in_time;
-            const checkOut = row.original?.global_check_out_time;
+            const employee = row.original?.employee;
             return (
-                <span className="text-sm font-mono">
-                    {checkIn && checkOut
-                        ? `${formatTime(checkIn)} - ${formatTime(checkOut)}`
-                        : "—"}
+                <span className="text-sm font-medium">
+                    {actions?.getEmployeeName
+                        ? actions.getEmployeeName(employee)
+                        : `${employee?.first_name} ${employee?.last_name}`}
                 </span>
             );
         },
     },
     {
+        accessorKey: "date",
+        header: ({ column }) => (
+            <div className="flex items-center gap-2">Date</div>
+        ),
+        cell: ({ row }) => (
+            <span className="text-xs text-muted-foreground">
+                {formatDate(row.original?.date)}
+            </span>
+        ),
+    },
+    // {
+    //     accessorKey: "adjustment_type",
+    //     header: ({ column }) => (
+    //         <div className="flex items-center gap-2">Adjustment type</div>
+    //     ),
+    //     cell: ({ row }) => (
+    //         <span className="text-xs text-muted-foreground">
+    //             {row.original?.adjustment_type || "Manual Attendance"}
+    //         </span>
+    //     ),
+    // },
+    {
+        accessorKey: "check_in_time",
+        header: "Check In",
+        cell: ({ row }) => (
+            <span className="text-sm font-mono">
+                {formatTime(row.original?.check_in_time)}
+            </span>
+        ),
+    },
+    {
+        accessorKey: "check_out_time",
+        header: "Check Out",
+        cell: ({ row }) => (
+            <span className="text-sm font-mono">
+                {formatTime(row.original?.check_out_time)}
+            </span>
+        ),
+    },
+    {
         accessorKey: "totalHours",
-        header: "Global Total Hours",
+        header: "Total Hours",
         cell: ({ row }) => {
             const total = calculateTotalHours(
-                row.original?.global_check_in_time,
-                row.original?.global_check_out_time
+                row.original?.check_in_time,
+                row.original?.check_out_time,
             );
-            console.log(row.original);
-            
             return <span className="text-sm font-medium">{total}h</span>;
         },
         sortingFn: (rowA, rowB) => {
             const a = calculateTotalHours(
-                rowA.original?.global_check_in_time,
-                rowA.original?.global_check_out_time
+                rowA.original?.check_in_time,
+                rowA.original?.check_out_time,
             );
             const b = calculateTotalHours(
-                rowB.original?.global_check_in_time,
-                rowB.original?.global_check_out_time
+                rowB.original?.check_in_time,
+                rowB.original?.check_out_time,
             );
             return a - b;
         },
     },
-    {
-        accessorKey: "status",
-        header: "Status",
-        cell: ({ row }) => <StatusBadge status={row.original?.status} />,
-    },
+    // {
+    //     accessorKey: "status",
+    //     header: "Status",
+    //     cell: ({ row }) => <StatusBadge status={row.original?.status} />,
+    // },
     // Actions
     {
         id: "actions",
@@ -183,8 +185,17 @@ const columns = (actions) => [
                 label="Actions"
                 // alignmentClass is omitted here, so it defaults to "flex justify-center"
                 items={[
-                    { label: "Edit", onClick: actions?.onEdit ,  permission: "manual-attendance" }, 
-                    { label: "Delete", onClick: actions?.onDelete, danger: true, passId: true, permission: "manual-attendance" }, // needs only ID
+                    {
+                        label: "Edit",
+                        onClick: actions?.onEdit,
+                        permission: "manual-attendance",
+                    },
+                    {
+                        label: "Delete",
+                        onClick: (data) => actions?.onDelete(data),
+                        danger: true,
+                        permission: "manual-attendance",
+                    },
                 ]}
             />
         ),
@@ -195,9 +206,9 @@ const columns = (actions) => [
 export const masterAttendanceColumns = columns;
 export const compactColumns = (actions) =>
     columns(actions).filter((col) =>
-        ["global_date", "displayProject", "status", "actions"].includes(
-            col.accessorKey || col.id
-        )
+        ["date", "employee", "status", "actions"].includes(
+            col.accessorKey || col.id,
+        ),
     );
 export const detailedColumns = (actions) => columns(actions);
 

@@ -10,8 +10,8 @@ import ReportActions from "@/components/report/ReportActions";
 
 const PurchaseDetailsReportPage = () => {
     const { actions, reportState } = useReport(
-        "leave/leave_summary",
-        "leave_summary"
+        "inventory/purchase-details-report",
+        "purchase-details-report",
     );
 
     return (

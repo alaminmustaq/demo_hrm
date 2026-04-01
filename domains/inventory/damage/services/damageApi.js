@@ -8,9 +8,9 @@ export const damageApi = createApi({
   tagTypes: ["Damage"],
   endpoints: (builder) => ({  
     fetchDamages: builder.query({
-      query: () => ({
+      query: ({ params } = {}) => ({
         url: "inventory/damages",
-        params: { ...getFilterParams() },
+        params: { ...getFilterParams(), ...params },
       }),
       providesTags: ["Damage"],
     }),

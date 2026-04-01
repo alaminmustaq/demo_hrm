@@ -52,14 +52,14 @@ const employeeShiftColumns = (actions) => [
           {
             label: "Edit",
             onClick: actions?.onEdit,
-            permission: "edit-holiday-type",
+            permission: "edit-employee-shift",
           },
           {
             label: "Delete",
             onClick: actions?.onDelete,
             danger: true,
             passId: true,
-            permission: "delete-holiday-type",
+            permission: "delete-employee-shift",
           },
         ]}
       />

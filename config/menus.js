@@ -36,6 +36,9 @@ import {
     CalendarSearch,
     CalendarPlus,
     Landmark,
+    Coins,
+    Gavel,
+    Gift,
 } from "lucide-react";
 
 export const menusConfig = {
@@ -102,7 +105,7 @@ export const menusConfig = {
                     title: "View Attendance",
                     href: "/attendance/view-attendance",
                     icon: UserCircle,
-                    permission: "view-attendance",
+                    permission: "manual-attendance",
                 },
                 {
                     title: "Manual Attendance",
@@ -127,6 +130,18 @@ export const menusConfig = {
                     href: "/salary/generate",
                     icon: Banknote,
                     permission: "view-salary",
+                },
+                {
+                    title: "Overtime",
+                    href: "/overtime",
+                    icon: Banknote,
+                    permission: "manual-attendance",
+                },
+                {
+                    title: "Advance",
+                    href: "/hrm/advance",
+                    icon: Banknote,
+                    permission: "manual-attendance",
                 },
             ],
         },
@@ -197,6 +212,54 @@ export const menusConfig = {
                 {
                     title: "Schedule Setup",
                     href: "/schedule/schedule-setup",
+                    icon: UserCircle,
+                    permission: "view-holiday-type",
+                },
+            ],
+        },
+        {
+            title: "Allowance",
+            icon: Coins,
+            child: [
+                {
+                    title: "Allowance Type",
+                    href: "/allowance/allowance-type",
+                    icon: UserCircle,
+                    permission: "view-holiday-type",
+                },
+                {
+                    title: "Earning / Deduction",
+                    href: "/allowance/earning-deduction",
+                    icon: UserCircle,
+                    permission: "view-holiday-type",
+                },
+            ],
+        },
+        {
+            title: "Bonus",
+            icon: Gift,
+            child: [
+                {
+                    title: "Bonus Type",
+                    href: "/bonus/bonus-type",
+                    icon: UserCircle,
+                    permission: "view-holiday-type",
+                },
+            ],
+        },
+        {
+            title: "Punishment",
+            icon: Gavel,
+            child: [
+                {
+                    title: "Punishment Type",
+                    href: "/punishment/punishment-type",
+                    icon: UserCircle,
+                    permission: "view-holiday-type",
+                },
+                {
+                    title: "General Punishment",
+                    href: "/punishment/punishment-general",
                     icon: UserCircle,
                     permission: "view-holiday-type",
                 },
@@ -314,6 +377,24 @@ export const menusConfig = {
             ],
         },
         {
+            title: "Recruitment",
+            icon: Briefcase,
+            child: [
+                {
+                    title: "Job list",
+                    href: "/recruitment/job-list",
+                    icon: ClipboardList,
+                    permission: "view-project",
+                },
+                {
+                    title: "Applicant list",
+                    href: "/recruitment/applicants",
+                    icon: Users,
+                    permission: "view-project",
+                },
+            ],
+        },
+        {
             title: "Document",
             icon: FileCheck,
             child: [
@@ -344,6 +425,12 @@ export const menusConfig = {
                 {
                     title: "Attendance Report",
                     href: "/report/attendance-report",
+                    icon: FileCode,
+                    permission: "view-attendance-reports",
+                },
+                {
+                    title: "Absent Report",
+                    href: "/report/absent-report",
                     icon: FileCode,
                     permission: "view-attendance-reports",
                 },
@@ -543,7 +630,7 @@ export const menusConfig = {
                         title: "View Attendance",
                         href: "/attendance/view-attendance",
                         icon: UserCircle,
-                        permission: "view-attendance",
+                        permission: "manual-attendance",
                     },
                     {
                         title: "Manual Attendance",
@@ -568,6 +655,18 @@ export const menusConfig = {
                         href: "/salary/generate",
                         icon: Banknote,
                         permission: "view-salary",
+                    },
+                    {
+                        title: "Overtime",
+                        href: "/overtime",
+                        icon: Banknote,
+                        permission: "manual-attendance",
+                    },
+                    {
+                        title: "Advance",
+                        href: "/hrm/advance",
+                        icon: Banknote,
+                        permission: "manual-attendance",
                     },
                 ],
             },
@@ -638,6 +737,54 @@ export const menusConfig = {
                     {
                         title: "Schedule Setup",
                         href: "/schedule/schedule-setup",
+                        icon: UserCircle,
+                        permission: "view-holiday-type",
+                    },
+                ],
+            },
+            {
+                title: "Allowance",
+                icon: Coins,
+                child: [
+                    {
+                        title: "Allowance Type",
+                        href: "/allowance/allowance-type",
+                        icon: UserCircle,
+                        permission: "view-holiday-type",
+                    },
+                    {
+                        title: "Earning / Deduction",
+                        href: "/allowance/earning-deduction",
+                        icon: UserCircle,
+                        permission: "view-holiday-type",
+                    },
+                ],
+            },
+            {
+                title: "Bonus",
+                icon: Gift,
+                child: [
+                    {
+                        title: "Bonus Type",
+                        href: "/bonus/bonus-type",
+                        icon: UserCircle,
+                        permission: "view-holiday-type",
+                    },
+                ],
+            },
+            {
+                title: "Punishment",
+                icon: Gavel,
+                child: [
+                    {
+                        title: "Punishment Type",
+                        href: "/punishment/punishment-type",
+                        icon: UserCircle,
+                        permission: "view-holiday-type",
+                    },
+                    {
+                        title: "General Punishment",
+                        href: "/punishment/punishment-general",
                         icon: UserCircle,
                         permission: "view-holiday-type",
                     },
@@ -753,6 +900,24 @@ export const menusConfig = {
                 ],
             },
             {
+                title: "Recruitment",
+                icon: Briefcase,
+                child: [
+                    {
+                        title: "Job list",
+                        href: "/recruitment/job-list",
+                        icon: ClipboardList,
+                        permission: "view-project",
+                    },
+                    {
+                        title: "Applicant list",
+                        href: "/recruitment/applicants",
+                        icon: Users,
+                        permission: "view-project",
+                    },
+                ],
+            },
+            {
                 title: "Document",
                 icon: FileCheck,
                 child: [
@@ -783,6 +948,12 @@ export const menusConfig = {
                     {
                         title: "Attendance Report",
                         href: "/report/attendance-report",
+                        icon: FileCode,
+                        permission: "view-attendance-reports",
+                    },
+                    {
+                        title: "Absent Report",
+                        href: "/report/absent-report",
                         icon: FileCode,
                         permission: "view-attendance-reports",
                     },
@@ -974,7 +1145,7 @@ export const menusConfig = {
                         title: "View Attendance",
                         href: "/attendance/view-attendance",
                         icon: UserCircle,
-                        permission: "view-attendance",
+                        permission: "manual-attendance",
                     },
                     {
                         title: "Manual Attendance",
@@ -999,6 +1170,18 @@ export const menusConfig = {
                         href: "/salary/generate",
                         icon: Banknote,
                         permission: "view-salary",
+                    },
+                    {
+                        title: "Overtime",
+                        href: "/overtime",
+                        icon: Banknote,
+                        permission: "manual-attendance",
+                    },
+                    {
+                        title: "Advance",
+                        href: "/hrm/advance",
+                        icon: Banknote,
+                        permission: "manual-attendance",
                     },
                 ],
             },
@@ -1075,6 +1258,72 @@ export const menusConfig = {
                     {
                         title: "Schedule Setup",
                         href: "/schedule/schedule-setup",
+                        icon: UserCircle,
+                        permission: "view-holiday-type",
+                    },
+                ],
+            },
+            {
+                title: "Allowance",
+                icon: Coins,
+                isOpen: false,
+                isHide: false,
+                child: [
+                    {
+                        title: "Allowance Type",
+                        href: "/allowance/allowance-type",
+                        icon: UserCircle,
+                        permission: "view-holiday-type",
+                    },
+                    {
+                        title: "Earning / Deduction",
+                        href: "/allowance/earning-deduction",
+                        icon: UserCircle,
+                        permission: "view-holiday-type",
+                    },
+                ],
+            },
+            {
+                title: "Bonus",
+                icon: Gift,
+                isOpen: false,
+                isHide: false,
+                child: [
+                    {
+                        title: "Bonus Type",
+                        href: "/bonus/bonus-type",
+                        icon: UserCircle,
+                        permission: "view-holiday-type",
+                    },
+                    {
+                        title: "Bonus Setup",
+                        href: "/bonus/bonus-setup",
+                        icon: UserCircle,
+                        permission: "view-holiday-type",
+                    },
+                    {
+                        title: "Bonus Process",
+                        href: "/bonus/bonus-process",
+                        icon: UserCircle,
+                        permission: "view-holiday-type",
+                    },
+                ],
+            },
+            {
+                title: "Punishment",
+                icon: Gavel,
+                isOpen: false,
+                isHide: false,
+                child: [
+                    {
+                        title: "Punishment Type",
+                        href: "/punishment/punishment-type",
+                        icon: UserCircle,
+                        permission: "view-holiday-type",
+                    },
+                    {
+                        title: "General Punishment",
+                        href: "/punishment/punishment-general",
                         icon: UserCircle,
                         permission: "view-holiday-type",
                     },
@@ -1192,6 +1441,24 @@ export const menusConfig = {
                 ],
             },
             {
+                title: "Recruitment",
+                icon: Briefcase,
+                child: [
+                    {
+                        title: "Job list",
+                        href: "/recruitment/job-list",
+                        icon: ClipboardList,
+                        permission: "view-project",
+                    },
+                    {
+                        title: "Applicant list",
+                        href: "/recruitment/applicants",
+                        icon: Users,
+                        permission: "view-project",
+                    },
+                ],
+            },
+            {
                 title: "Document",
                 icon: FileCheck,
                 isOpen: false,
@@ -1226,6 +1493,12 @@ export const menusConfig = {
                     {
                         title: "Attendance Report",
                         href: "/report/attendance-report",
+                        icon: FileCode,
+                        permission: "view-attendance-reports",
+                    },
+                    {
+                        title: "Absent Report",
+                        href: "/report/absent-report",
                         icon: FileCode,
                         permission: "view-attendance-reports",
                     },

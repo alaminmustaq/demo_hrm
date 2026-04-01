@@ -14,7 +14,7 @@ const useAuth = () => {
 
     // Get current auth state
     const { user, token, isAuthenticated, permissions } = useAppSelector(
-        (state) => state.auth
+        (state) => state.auth,
     );
 
     const [loginAsCompanyMutation] = useLoginAsCompanyMutation();
@@ -25,17 +25,23 @@ const useAuth = () => {
     const [logoutMutation, { isLoading: isLoggingOut }] = useLogoutMutation();
     const [triggerMe] = useLazyMeQuery();
 
-    const login = async (email, password) => {
+    const login = async (email, password, remember = false) => {
         try {
-            const response = await loginMutation({ email, password }).unwrap();
+            const response = await loginMutation({
+                email,
+                password,
+                remember,
+            }).unwrap();
 
-            Cookies.set("auth-token", response.data.token, { expires: 7 }); // expires in 7 days
+            Cookies.set("auth-token", response.data.token, {
+                expires: remember ? 30 : 1,
+            }); // expires in 30 days if remember is true, else 1 day
 
             dispatch(
                 setCredentials({
                     user: response.user,
                     token: response.token,
-                })
+                }),
             );
             return { success: true };
         } catch (error) {
@@ -44,8 +50,8 @@ const useAuth = () => {
     };
     const getMe = async () => {
         try {
-            const response = await triggerMe().unwrap(); 
-            
+            const response = await triggerMe().unwrap();
+
             dispatch(
                 setCredentials({
                     user: response.data,
@@ -55,7 +61,7 @@ const useAuth = () => {
                     branch: response?.data?.employee?.branch,
                     translation: response?.data?.translation,
                     language_code: response?.data?.language_code,
-                })
+                }),
             );
 
             return { success: true, data: response };
@@ -95,12 +101,12 @@ const useAuth = () => {
         }
     };
     const loginAsBranch = async (data) => {
-        const branch_id = data.id
-        const email = data.email
+        const branch_id = data.id;
+        const email = data.email;
         try {
             const response = await loginAsBranchMutation({
                 branch_id: branch_id,
-                email: email
+                email: email,
             }).unwrap();
 
             Cookies.set("auth-token", response.data.token, { expires: 7 }); // expires in 7 days

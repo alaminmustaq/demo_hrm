@@ -10,10 +10,10 @@ import { useGroupFormPaginated } from "@/domains/group-form-paginated/hook/useGr
 import FieldRenderer from "./field-renderer";
 
 const GroupFormPaginatedField = ({ fieldConfig, form, addButtonLabel }) => {
-    const { 
-        name, 
-        fields: childFields, 
-        label, 
+    const {
+        name,
+        fields: childFields,
+        label,
         isDelete = true,
         maxHeight = "400px",
         loadMoreLabel = "Load More",
@@ -31,18 +31,21 @@ const GroupFormPaginatedField = ({ fieldConfig, form, addButtonLabel }) => {
     const containerRef = useRef(null);
     const [searchTerm, setSearchTerm] = useState("");
     const prevSearchTermRef = useRef("");
-    
-    // State to remember checked/selected items by their unique ID
-    const [selectedItems, setSelectedItems] = useState(new Set());
-    
-    // Helper to get unique identifier from item
-    const getItemId = React.useCallback((item) => {
-        // Use id as primary identifier
-        if (!item) return null;
-        return item.id || null;
-    }, [childFields]);
 
-    
+    // State to remember checked/selected items by their unique ID
+    const [editedRows, setEditedRows] = useState({});
+    const [selectedItems, setSelectedItems] = useState(new Set());
+
+    // Helper to get unique identifier from item
+    const getItemId = React.useCallback(
+        (item) => {
+            // Use id as primary identifier
+            if (!item) return null;
+            return item.id || null;
+        },
+        [childFields],
+    );
+
     // Use pagination hook
     const {
         loadData,
@@ -79,7 +82,7 @@ const GroupFormPaginatedField = ({ fieldConfig, form, addButtonLabel }) => {
 
         const searchLower = searchTerm.toLowerCase();
         const allFormValues = form.getValues(name) || [];
-        
+
         return fields.filter((item, index) => {
             const itemData = allFormValues[index];
             if (!itemData) return false;
@@ -88,21 +91,32 @@ const GroupFormPaginatedField = ({ fieldConfig, form, addButtonLabel }) => {
             if (searchFields.length > 0) {
                 return searchFields.some((fieldName) => {
                     const value = itemData[fieldName];
-                    return value && String(value).toLowerCase().includes(searchLower);
+                    return (
+                        value &&
+                        String(value).toLowerCase().includes(searchLower)
+                    );
                 });
             }
 
             // Otherwise search in all string/number fields (excluding checkbox)
             return Object.entries(itemData).some(([key, value]) => {
                 // Skip checkbox fields for general search
-                if (key === 'is_selected') return false;
+                if (key === "is_selected") return false;
                 if (typeof value === "string" || typeof value === "number") {
                     return String(value).toLowerCase().includes(searchLower);
                 }
                 return false;
             });
         });
-    }, [fields, searchTerm, enableSearch, form, name, searchFields, serverSideSearch]);
+    }, [
+        fields,
+        searchTerm,
+        enableSearch,
+        form,
+        name,
+        searchFields,
+        serverSideSearch,
+    ]);
 
     // Handle load more with append to form
     const handleLoadMore = React.useCallback(async () => {
@@ -110,65 +124,77 @@ const GroupFormPaginatedField = ({ fieldConfig, form, addButtonLabel }) => {
         if (result?.items && result.items.length > 0) {
             // Get existing items to avoid duplicates
             const existingItems = form.getValues(name) || [];
-            const existingIds = existingItems.map(item => getItemId(item));
-            
+            const existingIds = existingItems.map((item) => getItemId(item));
+
             const newItems = result.items.filter(
-                item => !existingIds.includes(getItemId(item))
+                (item) => !existingIds.includes(getItemId(item)),
             );
 
             if (newItems.length > 0) {
                 // Restore checked state from saved selections
-                const itemsWithSelection = newItems.map(item => {
+                const itemsWithState = newItems.map((item) => {
                     const itemId = getItemId(item);
+                    const oldEdits = editedRows[itemId] || {};
+
                     return {
                         ...item,
+                        ...oldEdits, // 🔥 restore amount, status, etc.
                         is_selected: itemId ? selectedItems.has(itemId) : false,
                     };
                 });
-                itemsWithSelection.forEach(item => {
+                itemsWithState.forEach((item) => {
                     append(item);
                 });
             }
         }
-    }, [loadMore, form, name, append, getItemId, selectedItems]);
+    }, [loadMore, form, name, append, getItemId, selectedItems, editedRows]);
 
     // Handle initial load
     const handleInitialLoad = React.useCallback(async () => {
-        // Reset pagination to page 1
         const result = await resetAndLoad();
+
         if (result?.items && result.items.length > 0) {
-            // Restore checked state from saved selections
-            const itemsWithSelection = result.items.map(item => {
+            const itemsWithState = result.items.map((item) => {
                 const itemId = getItemId(item);
+                const oldEdits = editedRows[itemId] || {};
+
                 return {
                     ...item,
+                    ...oldEdits, // 🔥 restore amount, status, etc.
                     is_selected: itemId ? selectedItems.has(itemId) : false,
                 };
             });
-            replace(itemsWithSelection);
+
+            replace(itemsWithState);
         } else {
             replace([]);
         }
-    }, [resetAndLoad, replace, selectedItems, getItemId]);
+    }, [resetAndLoad, replace, selectedItems, editedRows, getItemId]);
 
     // Handle server-side search
-    const handleServerSearch = React.useCallback(async (searchValue) => {
-        // Reset pagination when searching - always start from page 1
-        const result = await loadData(1, false, searchValue);
-        if (result?.items && result.items.length > 0) {
-            // Restore checked state from saved selections
-            const itemsWithSelection = result.items.map(item => {
-                const itemId = getItemId(item);
-                return {
-                    ...item,
-                    is_selected: itemId ? selectedItems.has(itemId) : false,
-                };
-            });
-            replace(itemsWithSelection);
-        } else {
-            replace([]);
-        }
-    }, [loadData, replace, selectedItems, getItemId]);
+    const handleServerSearch = React.useCallback(
+        async (searchValue) => {
+            const result = await loadData(1, false, searchValue);
+
+            if (result?.items && result.items.length > 0) {
+                const itemsWithState = result.items.map((item) => {
+                    const itemId = getItemId(item);
+                    const oldEdits = editedRows[itemId] || {};
+
+                    return {
+                        ...item,
+                        ...oldEdits,
+                        is_selected: itemId ? selectedItems.has(itemId) : false,
+                    };
+                });
+
+                replace(itemsWithState);
+            } else {
+                replace([]);
+            }
+        },
+        [loadData, replace, selectedItems, editedRows, getItemId],
+    );
 
     // Effect to trigger server-side search when search term changes
     React.useEffect(() => {
@@ -177,9 +203,9 @@ const GroupFormPaginatedField = ({ fieldConfig, form, addButtonLabel }) => {
             if (hookSearchTerm === prevSearchTermRef.current) {
                 return;
             }
-            
+
             prevSearchTermRef.current = hookSearchTerm;
-            
+
             const timeoutId = setTimeout(() => {
                 // If search is cleared (empty), reload all data
                 if (hookSearchTerm === "" || hookSearchTerm.trim() === "") {
@@ -190,55 +216,51 @@ const GroupFormPaginatedField = ({ fieldConfig, form, addButtonLabel }) => {
             }, 500);
             return () => clearTimeout(timeoutId);
         }
-    }, [hookSearchTerm, serverSideSearch, handleServerSearch, handleInitialLoad]);
+    }, [
+        hookSearchTerm,
+        serverSideSearch,
+        handleServerSearch,
+        handleInitialLoad,
+    ]);
 
     // Watch for checkbox changes and update selectedItems state
     React.useEffect(() => {
         const subscription = form.watch((value, { name: fieldName }) => {
-            // Check if the changed field is a checkbox in our group
-            if (fieldName && fieldName.startsWith(`${name}.`) && fieldName.includes('is_selected')) {
-                const parts = fieldName.split('.');
-                const index = parseInt(parts[1]);
-                const allValues = form.getValues(name) || [];
-                const item = allValues[index];
-                
-                if (item) {
-                    const itemId = getItemId(item);
-                    if (itemId) {
-                        setSelectedItems(prev => {
-                            const newSet = new Set(prev);
-                            if (item.is_selected) {
-                                newSet.add(itemId);
-                            } else {
-                                newSet.delete(itemId);
-                            }
-                            
-                            // Add to form using setValue
-                            form.setValue("selectedId", newSet, { shouldValidate: false, shouldDirty: false });
-                            
-                            // Update form.selectedData with selected items
-                            const selectedData = allValues.filter(i => {
-                                const id = getItemId(i);
-                                return id && (id === itemId ? item.is_selected : newSet.has(id));
-                            });
-                            
-                            // Store in form.selectedData
-                            if (!form.selectedData) {
-                                form.selectedData = {};
-                            }
-                            form.selectedData[name] = {
-                                ids: Array.from(newSet),
-                                items: selectedData,
-                                count: newSet.size,
-                            };
-                            
-                            return newSet;
-                        });
-                    }
-                }
+            if (!fieldName || !fieldName.startsWith(`${name}.`)) return;
+
+            const parts = fieldName.split(".");
+            const index = parseInt(parts[1]);
+            const fieldKey = parts[2]; // amount, status, is_selected
+
+            const allValues = form.getValues(name) || [];
+            const item = allValues[index];
+            if (!item) return;
+
+            const itemId = getItemId(item);
+            if (!itemId) return;
+
+            // 🔥 HANDLE CHECKBOX (existing logic)
+            if (fieldKey === "is_selected") {
+                setSelectedItems((prev) => {
+                    const newSet = new Set(prev);
+                    item.is_selected
+                        ? newSet.add(itemId)
+                        : newSet.delete(itemId);
+                    return newSet;
+                });
+                return;
             }
+
+            // 🔥 HANDLE OTHER FIELDS (NEW)
+            setEditedRows((prev) => ({
+                ...prev,
+                [itemId]: {
+                    ...prev[itemId],
+                    [fieldKey]: item[fieldKey],
+                },
+            }));
         });
-        
+
         return () => subscription.unsubscribe();
     }, [form, name, getItemId]);
 
@@ -257,28 +279,31 @@ const GroupFormPaginatedField = ({ fieldConfig, form, addButtonLabel }) => {
                 form._paginatedLoaders = {};
             }
             form._paginatedLoaders[name] = handleInitialLoad;
-            
+
             // Initialize selectedData
             if (!form.selectedData) {
                 form.selectedData = {};
             }
-            
+
             // Add selectedItems to form using setValue
-            form.setValue("selectedId", selectedItems, { shouldValidate: false, shouldDirty: false });
-            
+            form.setValue("selectedId", selectedItems, {
+                shouldValidate: false,
+                shouldDirty: false,
+            });
+
             // Update selectedData whenever selectedItems changes
             const allValues = form.getValues(name) || [];
-            const selectedData = allValues.filter(item => {
+            const selectedData = allValues.filter((item) => {
                 const itemId = getItemId(item);
                 return itemId && selectedItems.has(itemId);
             });
-            
+
             form.selectedData[name] = {
                 ids: Array.from(selectedItems),
                 items: selectedData,
                 count: selectedItems.size,
             };
-            
+
             return () => {
                 if (form._paginatedLoaders) {
                     delete form._paginatedLoaders[name];
@@ -292,14 +317,14 @@ const GroupFormPaginatedField = ({ fieldConfig, form, addButtonLabel }) => {
         const observer = new IntersectionObserver(
             (entries) => {
                 if (
-                    entries[0].isIntersecting && 
-                    paginationState.hasMore && 
+                    entries[0].isIntersecting &&
+                    paginationState.hasMore &&
                     !paginationState.isLoading
                 ) {
                     handleLoadMore();
                 }
             },
-            { threshold: 0.1 }
+            { threshold: 0.1 },
         );
 
         const currentTarget = observerTarget.current;
@@ -340,7 +365,7 @@ const GroupFormPaginatedField = ({ fieldConfig, form, addButtonLabel }) => {
             {/* Scrollable container */}
             <div
                 ref={containerRef}
-                className="space-y-4 overflow-y-auto"
+                className="space-y-4"
                 style={{ maxHeight }}
             >
                 {filteredFields.length === 0 && currentSearchTerm ? (
@@ -357,7 +382,9 @@ const GroupFormPaginatedField = ({ fieldConfig, form, addButtonLabel }) => {
                 ) : (
                     filteredFields.map((item, index) => {
                         // Find original index in fields array
-                        const originalIndex = fields.findIndex(f => f.id === item.id);
+                        const originalIndex = fields.findIndex(
+                            (f) => f.id === item.id,
+                        );
                         return (
                             <div
                                 key={item.id}
@@ -365,7 +392,13 @@ const GroupFormPaginatedField = ({ fieldConfig, form, addButtonLabel }) => {
                             >
                                 {childFields.map((childField) => {
                                     const fieldName = `${name}.${originalIndex}.${childField.name}`;
-                                    if (childField.visibility === false) {
+                                    const isVisible =
+                                        typeof childField.visibility ===
+                                        "function"
+                                            ? !!childField.visibility(index)
+                                            : (childField.visibility ?? true);
+
+                                    if (isVisible === false) {
                                         return null;
                                     }
 
@@ -373,7 +406,8 @@ const GroupFormPaginatedField = ({ fieldConfig, form, addButtonLabel }) => {
                                         <div
                                             key={childField.name}
                                             className={cn(
-                                                childField.colSpan || "col-span-12"
+                                                childField.colSpan ||
+                                                    "col-span-12",
                                             )}
                                         >
                                             <FieldRenderer
@@ -392,7 +426,9 @@ const GroupFormPaginatedField = ({ fieldConfig, form, addButtonLabel }) => {
                                         <Button
                                             type="button"
                                             size="sm"
-                                            onClick={() => remove(originalIndex)}
+                                            onClick={() =>
+                                                remove(originalIndex)
+                                            }
                                             className="bg-red-500 hover:bg-red-600 text-white"
                                         >
                                             <Trash2 className="w-4 h-4" />
@@ -406,7 +442,10 @@ const GroupFormPaginatedField = ({ fieldConfig, form, addButtonLabel }) => {
 
                 {/* Loading indicator and load more trigger */}
                 {paginationState.hasMore && (
-                    <div ref={observerTarget} className="flex justify-center py-4">
+                    <div
+                        ref={observerTarget}
+                        className="flex justify-center py-4"
+                    >
                         {paginationState.isLoading ? (
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -446,4 +485,3 @@ const GroupFormPaginatedField = ({ fieldConfig, form, addButtonLabel }) => {
 };
 
 export default GroupFormPaginatedField;
-

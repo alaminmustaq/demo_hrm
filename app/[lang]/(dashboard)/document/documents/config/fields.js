@@ -19,7 +19,7 @@ const fields = (form) => {
             name: "branch_id",
             type: "async-select",
             label: "Branch*",
-            visibility: form.watch("document_for") === "employee",
+            visibility: ["employee", "client"].includes(form.watch("document_for")),
             loadOptions: [
                 "organization/branches",
                 "branches",
@@ -52,6 +52,7 @@ const fields = (form) => {
                 "clients/clients", 
                 "clients",
                 "clientTemplate",
+                "branch_id", // filter clients by branch
             ],
             placeholder: "Select client",
             colSpan: "col-span-12 md:col-span-6",

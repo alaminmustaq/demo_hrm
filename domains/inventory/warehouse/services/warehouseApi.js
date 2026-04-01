@@ -34,10 +34,10 @@ export const warehouseApi = createApi({
         }),
 
         warehouseFetch: builder.query({
-            query: () => ({
+            query: ({ params } = {}) => ({
                 url: "inventory/warehouses",
                 method: "GET",
-                params: { ...getFilterParams() }, // supports pagination, filters, etc.
+                params: { ...getFilterParams(), ...params }, // supports pagination, filters, etc.
             }),
             providesTags: ["Warehouse"],
         }),

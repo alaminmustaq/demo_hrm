@@ -10,6 +10,8 @@ import {
     useLazyGetTodayAttendanceQuery,
     useSyncOfflineDataMutation,
     useLazyGetLatestBranchLocationQuery,
+    useUpdateAttendanceMutation,
+    useDeleteAttendanceMutation,
 } from "../services/attendanceApi";
 import {
     setTodayAttendance,
@@ -21,8 +23,10 @@ import {
     setSyncStatus,
     setLastAction,
 } from "../model/attendanceSlice";
+import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-
+import dayjs from "dayjs";
+import { formReset } from "@/utility/helpers";
 const useAttendance = () => {
     const dispatch = useAppDispatch();
 
@@ -54,19 +58,30 @@ const useAttendance = () => {
     const [syncOfflineDataMutation, { isLoading: isSyncing }] =
         useSyncOfflineDataMutation();
 
+    const [updateAttendanceMutation, { isLoading: isUpdating }] =
+        useUpdateAttendanceMutation();
+    const [deleteAttendanceMutation, { isLoading: isDeleting }] =
+        useDeleteAttendanceMutation();
+
     //  const { data: attendance} = useViewAttendanceQuery();
     const { data, refetch, isFetching } = useViewAttendanceQuery();
 
+    const form = useForm({
+        mode: "onBlur",
+        reValidateMode: "onSubmit",
+        shouldFocusError: true,
+    });
+
     const attendanceState = {
         data: data?.data?.items || [],
-
+        form: {
+            ...form,
+        },
         refetch,
         pagination: data?.data?.pagination || {},
         isFetching,
-    }; 
-    
+    };
 
-    
     // State for location configuration
     const [TARGET_LATITUDE, setTargetLatitude] = useState(null);
     const [TARGET_LONGITUDE, setTargetLongitude] = useState(null);
@@ -100,7 +115,7 @@ const useAttendance = () => {
         lon1,
         lat2,
         lon2,
-        rangeMeters = ALLOWED_RANGE_METERS
+        rangeMeters = ALLOWED_RANGE_METERS,
     ) => {
         const R = 6371e3; // Earth radius in meters
         const φ1 = (lat1 * Math.PI) / 180;
@@ -126,7 +141,7 @@ const useAttendance = () => {
         return new Promise((resolve, reject) => {
             if (!navigator.geolocation) {
                 reject(
-                    new Error("Geolocation is not supported by this browser")
+                    new Error("Geolocation is not supported by this browser"),
                 );
                 return;
             }
@@ -146,7 +161,7 @@ const useAttendance = () => {
                     enableHighAccuracy: true,
                     timeout: 10000,
                     maximumAge: 300000, // 5 minutes
-                }
+                },
             );
         });
     };
@@ -176,7 +191,7 @@ const useAttendance = () => {
                 };
             }
         },
-        [generateQRCodeMutation, dispatch]
+        [generateQRCodeMutation, dispatch],
     );
 
     const getQRStatus = useCallback(
@@ -197,7 +212,7 @@ const useAttendance = () => {
                 };
             }
         },
-        [triggerGetQRStatus, dispatch]
+        [triggerGetQRStatus, dispatch],
     );
 
     // QR Attendance operations
@@ -206,22 +221,21 @@ const useAttendance = () => {
             try {
                 // Use provided branch data or fallback to hook's branch
                 const useBranch = branchData || branch;
-                const currentLocation = await getLatestBranchLocation(); 
+                const currentLocation = await getLatestBranchLocation();
 
                 // Get current location if not provided
                 if (!latitude || !longitude) {
                     try {
                         const location = await getCurrentLocation();
                         latitude = location.latitude;
-                        longitude = location.longitude; 
-
+                        longitude = location.longitude;
                     } catch (locationError) {
                         console.error(
                             "QR Check-in: Location error:",
-                            locationError
+                            locationError,
                         );
                         toast.error(
-                            "Please enable location access for attendance"
+                            "Please enable location access for attendance",
                         );
                         return {
                             success: false,
@@ -231,13 +245,14 @@ const useAttendance = () => {
                 }
 
                 // Convert branch coordinates to numbers for validation
-                const targetLat =  currentLocation?.data?.latitude
-                    ? parseFloat( currentLocation?.data?.latitude)
+                const targetLat = currentLocation?.data?.latitude
+                    ? parseFloat(currentLocation?.data?.latitude)
                     : null;
-                const targetLng =  currentLocation?.data?.longitude
-                    ? parseFloat( currentLocation?.data?.longitude)
+                const targetLng = currentLocation?.data?.longitude
+                    ? parseFloat(currentLocation?.data?.longitude)
                     : null;
-                const allowedRange =  currentLocation?.data?.allowed_range_meters || 100;
+                const allowedRange =
+                    currentLocation?.data?.allowed_range_meters || 100;
 
                 // Check location validation
                 const locationCheck = isWithinRange(
@@ -245,8 +260,8 @@ const useAttendance = () => {
                     targetLng,
                     latitude,
                     longitude,
-                    allowedRange
-                ); 
+                    allowedRange,
+                );
 
                 if (!locationCheck.isWithin) {
                     const errorMessage = `You are outside the allowed range for check-in. Distance: ${locationCheck.distance}m (Max: ${allowedRange}m)`;
@@ -287,13 +302,12 @@ const useAttendance = () => {
                         action: "check_in",
                         success: true,
                         data: response.data,
-                    })
+                    }),
                 );
-                
+
                 setTimeout(() => {
                     toast.success(response.message || "Check-in successful!");
                 }, 500);
-                
 
                 return {
                     success: true,
@@ -313,7 +327,7 @@ const useAttendance = () => {
                         action: "check_in",
                         success: false,
                         error: errorMessage,
-                    })
+                    }),
                 );
 
                 // Store for offline sync if network error
@@ -325,7 +339,7 @@ const useAttendance = () => {
                             latitude,
                             longitude,
                             device_info: deviceInfo,
-                        })
+                        }),
                     );
                     toast.error("Stored offline. Will sync when online.");
                 } else {
@@ -338,7 +352,7 @@ const useAttendance = () => {
                 };
             }
         },
-        [scanQRCodeMutation, dispatch]
+        [scanQRCodeMutation, dispatch],
     );
 
     const qrCheckOut = useCallback(
@@ -349,7 +363,7 @@ const useAttendance = () => {
                     TARGET_LATITUDE,
                     TARGET_LONGITUDE,
                     latitude,
-                    longitude
+                    longitude,
                 );
 
                 console.log("Location check:", locationCheck);
@@ -393,7 +407,7 @@ const useAttendance = () => {
                         action: "check_out",
                         success: true,
                         data: response.data,
-                    })
+                    }),
                 );
 
                 toast.success(response.message || "Check-out successful!");
@@ -416,7 +430,7 @@ const useAttendance = () => {
                         action: "check_out",
                         success: false,
                         error: errorMessage,
-                    })
+                    }),
                 );
 
                 // Store for offline sync if network error
@@ -428,7 +442,7 @@ const useAttendance = () => {
                             latitude,
                             longitude,
                             device_info: deviceInfo,
-                        })
+                        }),
                     );
                     toast.error("Stored offline. Will sync when online.");
                 } else {
@@ -441,7 +455,7 @@ const useAttendance = () => {
                 };
             }
         },
-        [scanQRCodeMutation, dispatch]
+        [scanQRCodeMutation, dispatch],
     );
 
     // Regular attendance operations
@@ -462,7 +476,7 @@ const useAttendance = () => {
                         additionalData.longitude = longitude;
                     } catch (locationError) {
                         toast.error(
-                            "Please enable location access for attendance"
+                            "Please enable location access for attendance",
                         );
                         return {
                             success: false,
@@ -476,7 +490,7 @@ const useAttendance = () => {
                     TARGET_LATITUDE,
                     TARGET_LONGITUDE,
                     latitude,
-                    longitude
+                    longitude,
                 );
 
                 console.log("Location check:", locationCheck);
@@ -513,7 +527,7 @@ const useAttendance = () => {
                 };
             }
         },
-        [checkInMutation, dispatch]
+        [checkInMutation, dispatch],
     );
 
     const checkOut = useCallback(
@@ -533,7 +547,7 @@ const useAttendance = () => {
                         additionalData.longitude = longitude;
                     } catch (locationError) {
                         toast.error(
-                            "Please enable location access for attendance"
+                            "Please enable location access for attendance",
                         );
                         return {
                             success: false,
@@ -547,7 +561,7 @@ const useAttendance = () => {
                     TARGET_LATITUDE,
                     TARGET_LONGITUDE,
                     latitude,
-                    longitude
+                    longitude,
                 );
 
                 console.log("Location check:", locationCheck);
@@ -584,7 +598,7 @@ const useAttendance = () => {
                 };
             }
         },
-        [checkOutMutation, dispatch]
+        [checkOutMutation, dispatch],
     );
 
     const getTodayAttendance = useCallback(async () => {
@@ -613,9 +627,8 @@ const useAttendance = () => {
         try {
             dispatch(setSyncStatus("syncing"));
 
-            const response = await syncOfflineDataMutation(
-                offlineData
-            ).unwrap();
+            const response =
+                await syncOfflineDataMutation(offlineData).unwrap();
 
             dispatch(clearOfflineData());
             dispatch(setSyncStatus("completed"));
@@ -639,6 +652,78 @@ const useAttendance = () => {
             };
         }
     }, [syncOfflineDataMutation, dispatch, offlineData]);
+
+    const actions = {
+        onEdit: (data) => {
+            const formatTime = (time) => {
+                if (!time) return "";
+                if (
+                    /^\d{2}:\d{2}$/.test(time) ||
+                    /^\d{2}:\d{2}:\d{2}$/.test(time)
+                ) {
+                    return time.slice(0, 5);
+                }
+                try {
+                    const d = new Date(`1970-01-01T${time}`);
+                    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                } catch {
+                    return time;
+                }
+            };
+
+            form.reset({
+                id: data.id,
+                check_in_time: formatTime(data.check_in_time),
+                check_out_time: formatTime(data.check_out_time),
+                openModel: true,
+            });
+        },
+
+        onUpdate: async (data) => {
+            try {
+                const response = await updateAttendanceMutation({
+                    id: data.id,
+                    check_in_time: data.check_in_time,
+                    check_out_time: data.check_out_time,
+                }).unwrap();
+
+                if (response.success || response) {
+                    toast.success("Attendance updated successfully");
+                    refetch();
+                    formReset(form);
+                    form.setValue("openModel", false);
+                }
+            } catch (error) {
+                console.error("Update error:", error);
+                toast.error(
+                    error?.data?.message || "Failed to update attendance",
+                );
+            }
+        },
+
+        onDelete: async (data) => {
+            if (
+                confirm(
+                    "Are you sure you want to delete this attendance record?",
+                )
+            ) {
+                try {
+                    const response = await deleteAttendanceMutation(
+                        data.id,
+                    ).unwrap();
+                    if (response.success || response) {
+                        toast.success("Attendance deleted successfully");
+                        refetch();
+                    }
+                } catch (error) {
+                    console.error("Delete error:", error);
+                    toast.error(
+                        error?.data?.message || "Failed to delete attendance",
+                    );
+                }
+            }
+        },
+    };
 
     return {
         // State
@@ -672,6 +757,9 @@ const useAttendance = () => {
         isCheckingOut,
         isSyncing,
         attendanceState,
+
+        // Expose edit/delete/update handler
+        actions,
     };
 };
 

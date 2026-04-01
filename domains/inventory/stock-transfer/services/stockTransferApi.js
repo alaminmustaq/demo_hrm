@@ -8,9 +8,9 @@ export const stockTransferApi = createApi({
   tagTypes: ["StockTransfer"],
   endpoints: (builder) => ({ 
     fetchStockTransfers: builder.query({
-      query: () => ({
+      query: ({ params } = {}) => ({
         url: "inventory/stock-transfers",
-        params: { ...getFilterParams() },
+        params: { ...getFilterParams(), ...params },
       }),
       providesTags: ["StockTransfer"],
     }),

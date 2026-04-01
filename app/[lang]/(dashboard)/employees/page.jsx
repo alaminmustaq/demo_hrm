@@ -51,6 +51,7 @@ const EmployeePage = () => {
                 searchKey="employee"
                 includeInactive={true}
             />
+
         </PageLayout>
     );
 };

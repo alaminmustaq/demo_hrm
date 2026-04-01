@@ -2,6 +2,7 @@ import {
     handleServerValidationErrors,
     formReset,
     normalizeSelectValues,
+    prepareFilterPayload,
 } from "@/utility/helpers";
 import {
     useCreateToolMutation,
@@ -15,11 +16,32 @@ import {
     categorySearchTemplate,
     unitSearchTemplate,
 } from "@/utility/templateHelper";
+import { useState } from "react";
+import {
+    useRouter,
+    usePathname,
+    useParams,
+    useSearchParams,
+} from "next/navigation";
 export const useTool = () => {
+    const router = useRouter();
     const [createTool] = useCreateToolMutation();
     const [updateTool] = useUpdateToolMutation();
     const [deleteTool] = useDeleteToolMutation();
-    const { data: toolsData, refetch, isFetching } = useFetchToolsQuery();
+    // For Filters
+    const [filters, setFilters] = useState({});
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const pageFromUrl = searchParams.get("page") || "1";
+    const queryParams = {
+        ...filters,
+        ...(pageFromUrl ? { page: pageFromUrl } : {}),
+    };
+    const {
+        data: toolsData,
+        refetch,
+        isFetching,
+    } = useFetchToolsQuery({ params: queryParams });
 
     const form = useForm({
         mode: "onBlur",
@@ -43,6 +65,42 @@ export const useTool = () => {
     };
 
     const actions = {
+        //  FILTER
+        onFilter: async () => {
+            const values = form.getValues();
+            const payload = prepareFilterPayload(values, searchParams);
+
+            setFilters(payload);
+
+            const params = new URLSearchParams({ page: "1" });
+
+            Object.entries(payload).forEach(([key, value]) => {
+                if (Array.isArray(value)) {
+                    value.forEach((v) => params.append(`${key}[]`, v));
+                } else {
+                    params.set(key, value);
+                }
+            });
+
+            router.push(`${pathname}`);
+            refetch();
+        },
+
+        //  RESET
+        onReset: async () => {
+            const resetValues = Object.fromEntries(
+                Object.entries(form.getValues()).map(([key, value]) => [
+                    key,
+                    Array.isArray(value) ? [] : "",
+                ]),
+            );
+
+            form.reset(resetValues);
+            setFilters({});
+            await form.trigger();
+            refetch();
+        },
+
         onCreate: async (data) => {
             try {
                 const { openModel, ...other } = data;
@@ -78,7 +136,7 @@ export const useTool = () => {
                 // Normalize dropdowns
                 category_id:
                     categorySearchTemplate(
-                        item.category ? [item.category] : []
+                        item.category ? [item.category] : [],
                     )?.at(0) ?? null,
                 unit_id:
                     unitSearchTemplate(item.unit ? [item.unit] : [])?.at(0) ??

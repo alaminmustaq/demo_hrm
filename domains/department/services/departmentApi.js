@@ -30,10 +30,10 @@ export const departmentApi = createApi({
             invalidatesTags: ["Department"],
         }),
         departmentFetch: builder.query({
-            query: () => ({
+            query: ({ params } = {}) => ({
                 url: "organization/departments",
                 method: "GET",
-                params: { ...getFilterParams() }, // fetch all branches
+                params: { ...getFilterParams(), ...params }, // fetch all branches
             }),
             providesTags: ["Department"],
         }),

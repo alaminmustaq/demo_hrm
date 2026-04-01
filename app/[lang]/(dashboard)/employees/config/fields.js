@@ -42,7 +42,7 @@ const fields = () => {
                         "organization/job-positions",
                         "job_positions",
                         "jobPositionsTemplate",
-                        "department_id",
+                        ["branch_id","department_id"],
                     ],
                 },
                 // {
@@ -388,7 +388,7 @@ const fields = () => {
                     label: "Basic Salary *",
                     placeholder: "90000.00",
                     colSpan: "col-span-12 md:col-span-4",
-                    inputProps: { min: 0, step: "0.01" },
+                    inputProps: { min: 0, step: "0.01",type:"number" },
                     rules: { min: { value: 0, message: "Must be ≥ 0" } },
                 },
 

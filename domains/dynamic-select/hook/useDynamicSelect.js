@@ -39,7 +39,7 @@ export const useDynamicSelect = (
 
   // manual trigger (like getMe) 
  const runTrigger = useCallback(
-  async (customSearch = " ") => {
+  async (customSearch = "") => {
     try {
       let dependencyData = {};
 
@@ -90,13 +90,13 @@ export const useDynamicSelect = (
 
   // load data on dropdown open
   const onLoadData = useCallback(async () => { 
-    setSearch(" ");
+    setSearch("");
     setUrl(urlValue);
 
     // no parent selected → return empty
     if (dependencyKey && !dependencyValue) return [];
 
-    const result = await runTrigger(" ");
+    const result = await runTrigger("");
     if (result.success) {
       return transformResults(result.data?.data?.[dataKey] ?? []);
     }

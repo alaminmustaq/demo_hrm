@@ -4,25 +4,36 @@ import { baseQuery } from "@/utility/baseQuery";
 export const ruleApi = createApi({
     reducerPath: "ruleApi",
     baseQuery,
-    tagTypes: ["Rule"],
+    tagTypes: ["GeneralRule", "PunishmentRule"],
 
     endpoints: (builder) => ({
+        // 📥 FETCH BOTH (optional combined endpoint)
         fetchRules: builder.query({
             query: () => ({
                 url: "rules",
                 method: "GET",
             }),
-            providesTags: ["Rule"],
+            providesTags: ["GeneralRule", "PunishmentRule"],
         }),
 
-       
+        // 🟦 GENERAL RULE UPDATE
         updateRules: builder.mutation({
             query: (data) => ({
                 url: "rules",
                 method: "POST",
-                body: data, 
+                body: data,
             }),
-            invalidatesTags: ["Rule"],
+            invalidatesTags: ["GeneralRule"],
+        }),
+
+        // 🟥 PUNISHMENT RULE UPDATE
+        updatePunishmentRules: builder.mutation({
+            query: (data) => ({
+                url: "punishment-rules",
+                method: "POST",
+                body: data,
+            }),
+            invalidatesTags: ["PunishmentRule"],
         }),
     }),
 });
@@ -30,4 +41,5 @@ export const ruleApi = createApi({
 export const {
     useFetchRulesQuery,
     useUpdateRulesMutation,
+    useUpdatePunishmentRulesMutation,
 } = ruleApi;

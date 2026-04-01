@@ -127,7 +127,7 @@ export const attendanceApi = createApi({
 
         deleteAttendance: builder.mutation({
             query: (id) => ({
-                url: `api/v1/hrm/attendance/${id}`,
+                url: `hrm/attendance/${id}`,
                 method: "DELETE",
             }),
             invalidatesTags: ["Attendance"],
@@ -135,7 +135,7 @@ export const attendanceApi = createApi({
 
         updateAttendance: builder.mutation({
             query: ({ id, ...data }) => ({
-                url: `api/v1/hrm/attendance/${id}`,
+                url: `hrm/attendance/${id}`,
                 method: "PATCH",
                 body: data,
             }),

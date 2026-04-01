@@ -225,8 +225,8 @@ const fields = (form, actions) => {
                 form.setValue(
                     "branch_id",
                     branchSearchTemplate(
-                        user?.employee?.branch ? [user?.employee?.branch] : []
-                    )?.at(0) ?? null
+                        user?.employee?.branch ? [user?.employee?.branch] : [],
+                    )?.at(0) ?? null,
                 );
                 form.setValue("department_id", null);
                 form.setValue("employee_ids", null);
@@ -361,7 +361,7 @@ const fields = (form, actions) => {
                         form._paginatedLoaders.employee_details();
                     } else {
                         console.warn(
-                            "Paginated loader not found for employee_details"
+                            "Paginated loader not found for employee_details",
                         );
                     }
                 }, 100);
@@ -384,7 +384,7 @@ const fields = (form, actions) => {
         {
             name: "employee_details",
             type: "group-form-paginated",
-            label: "Employee Details(Check to exclude employee from leave)",
+            label: "Employee Details (Check to exclude employee from leave)",
             colSpan: "col-span-12",
             addButtonLabel: false,
             isDelete: false,

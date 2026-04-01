@@ -273,6 +273,7 @@ export function BasicDataTable({
 
                                         return (
                                             <Button
+                                                color={config.color || "primary"}
                                                 key={key}
                                                 onClick={() => {
                                                     

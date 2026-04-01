@@ -24,11 +24,19 @@ export default function DynamicAsyncSelect({
         <AsyncSelect
             isMulti={isMulti}
             isDisabled={isDisabled}
+            styles={{
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                menu: (base) => ({ ...base, zIndex: 9999 }),
+            }}
             value={field.value}
-            defaultOptions={[...firstChildren, ...transformed,...lastChildren]}
+            defaultOptions={[...firstChildren, ...transformed, ...lastChildren]}
             loadOptions={(inputValue, callback) => {
                 onSearch(inputValue, (options) => {
-                    const merged = [...firstChildren, ...options,...lastChildren];
+                    const merged = [
+                        ...firstChildren,
+                        ...options,
+                        ...lastChildren,
+                    ];
                     callback(merged);
                 });
             }}
@@ -37,8 +45,8 @@ export default function DynamicAsyncSelect({
                 placeholder
                     ? placeholder
                     : isMulti
-                    ? "Select multiple options..."
-                    : "Select option..."
+                      ? "Select multiple options..."
+                      : "Select option..."
             }
             onChange={(val) => {
                 if (Array.isArray(child)) {

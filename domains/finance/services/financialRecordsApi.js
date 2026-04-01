@@ -48,13 +48,17 @@ export const financialRecordsApi = createApi({
             invalidatesTags: ["FinancialRecord"],
         }),
         fetchFinancialRecords: builder.query({
-            query: () => ({
-                url: "finance/financial-records",
-                method: "GET",
-                params: { ...getFilterParams() },
-            }),
-            providesTags: ["FinancialRecord"],
-        }),
+    query: ({ params } = {}) => ({
+        url: "finance/financial-records",
+        method: "GET",
+        params: {
+            ...getFilterParams(), // default filters
+            ...params,           // merged from hook
+        },
+    }),
+    providesTags: ["FinancialRecord"],
+}),
+
     }),
 });
 

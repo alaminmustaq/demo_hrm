@@ -79,6 +79,7 @@ export const warehouseSearchTemplate = (res) => {
     return res.map((warehouse) => ({
         label: warehouse.name,
         value: warehouse.id,
+        location: warehouse.location,
     })); // what is stored in form
 };
 
@@ -136,6 +137,16 @@ export const leaveTypeSearchTemplate = (data = []) => {
         label: item.name,
     }));
 };
+export const bonusTypeSearchTemplate = (data = []) =>
+    (data || []).map((item) => ({
+        value: item.id,
+        label: item.name ?? item.bonus_type?.name ?? "",
+    }));
+export const bonusNameSearchTemplate = (data = []) =>
+    (data || []).map((item) => ({
+        value: item.id,
+        label: item.bonus_type?.name + " (" + item.bonus_name + ")",
+    }));
 export const holidayTypeSearchTemplate = (data = []) => {
     return data.map((item) => ({
         value: item.id,

@@ -8,9 +8,9 @@ export const employeeShiftApi = createApi({
   tagTypes: ["employee-shift"],
   endpoints: (builder) => ({
     fetchEmployeeShifts: builder.query({
-      query: () => ({
+      query: ({ params } = {}) => ({
         url: "schedule/employee_shift",
-        params: { ...getFilterParams() },
+        params: { ...getFilterParams(), ...params },
       }),
       providesTags: ["employee-shift"],
     }),

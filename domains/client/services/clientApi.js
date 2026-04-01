@@ -31,10 +31,10 @@ export const clientApi = createApi({
             invalidatesTags: ["Client"],
         }),
         clientFetch: builder.query({
-            query: () => ({
+            query: ({ params } = {}) => ({
                 url: "clients/clients",
                 method: "GET",
-                params: { ...getFilterParams() },
+                params: { ...getFilterParams(), ...params },
             }),
             providesTags: ["Client"],
         }),

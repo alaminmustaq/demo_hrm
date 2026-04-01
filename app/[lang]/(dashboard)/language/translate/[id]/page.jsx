@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import Card from "@/components/ui/card-snippet";
 import PageLayout from "@/components/page-layout";
 import { useLanguage } from "@/domains/language/hook/useLanguage";
@@ -11,7 +11,7 @@ import { useSelector } from "react-redux";
 const TranslatePage = ({ params }) => {
   const translation_state = useSelector((state) => state.auth.translation); 
   
-  const { lang, id: languageId } = params;
+  const { lang, id: languageId } = use(params);
   const { languageState, actions } = useLanguage();
   const translations = languageState.values || [];
   const [translationsState, setTranslationsState] = useState(translations);

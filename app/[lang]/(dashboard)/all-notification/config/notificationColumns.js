@@ -20,19 +20,23 @@ const notificationColumns = (actions) => [
     },
   },
   {
-    accessorKey: "status",
+    accessorKey: "read_at",
     header: "Status",
     thClass: "!text-center",
     tdClass: "!text-center",
     cell: ({ row }) => {
-      const status = row.original.status || "—";
-      const className =
-        status === "pending"
-          ? "bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full"
-          : status === "sent"
-          ? "bg-green-100 text-green-700 px-2 py-0.5 rounded-full"
-          : "bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full";
-      return <span className={className}>{status === "sent" ? "Seen": "Pending"}</span>;
+      const isRead = !!row.original.read_at;
+      return (
+        <span
+          className={
+            isRead
+              ? "bg-green-100 text-green-700 px-2 py-0.5 rounded-full"
+              : "bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full"
+          }
+        >
+          {isRead ? "Read" : "Unread"}
+        </span>
+      );
     },
   },
   {

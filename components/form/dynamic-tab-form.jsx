@@ -14,13 +14,14 @@ const DynamicTabForm = ({
     form,
     actions,
     isServerValidated = false,
-}) => { 
-    useEffect(()=>{
+}) => {
+    useEffect(() => {
         form.reset(form.defaultValue);
         setActiveStep(0);
-    },[])
+    }, []);
     const translation_state = useSelector((state) => state.auth.translation);
     const [activeStep, setActiveStep] = React.useState(0);
+    const [isInternalLoading, setIsInternalLoading] = React.useState(false);
 
     const stepHasError = (index) => {
         const fieldsInStep = fieldDefs[index]?.fields || [];
@@ -29,37 +30,42 @@ const DynamicTabForm = ({
             return !!fieldError;
         });
     };
-    
+
     const fieldDefs =
         typeof fields === "function"
             ? fields()
             : Array.isArray(fields)
-            ? fields
-            : []; 
-    const steps = fieldDefs.map((field) => field.tab); 
+              ? fields
+              : [];
+    const steps = fieldDefs.map((field) => field.tab);
     const isStepOptional = (step) => {
         return step === 1;
     };
 
     const handleNext = async () => {
-        let valid = false;
-        if (isServerValidated) {
-            const response = form.watch("id")
-                ? await actions.onUpdate(form.getValues())
-                : await actions.onCreate(form.getValues());
+        setIsInternalLoading(true);
+        try {
+            let valid = false;
+            if (isServerValidated) {
+                const response = form.watch("id")
+                    ? await actions.onUpdate(form.getValues())
+                    : await actions.onCreate(form.getValues());
 
-            if (response?.success) {
-                valid = true;
+                if (response?.success) {
+                    valid = true;
+                } else {
+                    valid = false;
+                }
             } else {
-                valid = false;
+                valid = await form.trigger();
             }
-        } else {
-            valid = await form.trigger();
-        }
 
-        if (valid) {
-            form.setValue("step", activeStep + 1);
-            setActiveStep((prevActiveStep) => prevActiveStep + 1);
+            if (valid) {
+                form.setValue("step", activeStep + 1);
+                setActiveStep((prevActiveStep) => prevActiveStep + 1);
+            }
+        } finally {
+            setIsInternalLoading(false);
         }
     };
 
@@ -134,7 +140,7 @@ const DynamicTabForm = ({
                                                         key={f.name}
                                                         className={cn(
                                                             f.colSpan ||
-                                                                "col-span-12"
+                                                                "col-span-12",
                                                         )}
                                                     >
                                                         <FieldRenderer
@@ -174,14 +180,27 @@ const DynamicTabForm = ({
                                 variant="outline"
                                 color="success"
                                 className="cursor-pointer"
+                                isLoading={isInternalLoading}
                                 onClick={async () => {
-                                    const response = form.watch("id")
-                                        ? await actions.onUpdate(form.getValues())
-                                        : await actions.onCreate(form.getValues());
+                                    setIsInternalLoading(true);
+                                    try {
+                                        const response = form.watch("id")
+                                            ? await actions.onUpdate(
+                                                  form.getValues(),
+                                              )
+                                            : await actions.onCreate(
+                                                  form.getValues(),
+                                              );
 
-                                    if (response?.success && !form.watch("id")) {
-                                        form.reset(form.defaultValue);
-                                        setActiveStep(0);
+                                        if (
+                                            response?.success &&
+                                            !form.watch("id")
+                                        ) {
+                                            form.reset(form.defaultValue);
+                                            setActiveStep(0);
+                                        }
+                                    } finally {
+                                        setIsInternalLoading(false);
                                     }
                                 }}
                             >
@@ -193,6 +212,7 @@ const DynamicTabForm = ({
                                 variant="outline"
                                 color="secondary"
                                 className="cursor-pointer"
+                                isLoading={isInternalLoading}
                                 onClick={handleNext}
                             >
                                 Next

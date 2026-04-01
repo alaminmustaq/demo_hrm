@@ -35,12 +35,6 @@ let columns = () => [
     id: "net_payable",
     header: "Net Payable",
     cell: ({ row }) => safe(row.original?.net_payable),
-  },
-
-  {
-    id: "total_hours",
-    header: "Total Hours",
-    cell: ({ row }) => safe(row.original?.total_hours),
   }, 
 
   {

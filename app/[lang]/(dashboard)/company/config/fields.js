@@ -118,6 +118,14 @@ const fields = [
         colSpan: "col-span-12 md:col-span-6",
     },
     {
+        name: "next_day_time",
+        type: "date",
+        inputProps: { type: "time" }, 
+        label: "Next Day Time *",
+        colSpan: "col-span-12 md:col-span-4",
+        rules: { required: "Next Day Time is required" }
+    },
+    {
         name: "website",
         type: "input",
         label: "Website",

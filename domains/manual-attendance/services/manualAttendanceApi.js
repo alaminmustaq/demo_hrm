@@ -1,5 +1,6 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQuery } from "../../../utility/baseQuery";
+import { getFilterParams } from "@/utility/helpers";
 
 export const manualAttendanceApi = createApi({
     reducerPath: "manualAttendanceApi",
@@ -28,9 +29,10 @@ export const manualAttendanceApi = createApi({
 
         // Delete manual attendance
         deleteManualAttendance: builder.mutation({
-            query: (id) => ({
+            query: ({ id, employee_id, date }) => ({
                 url: `hrm/manual-attendance/${id}`,
                 method: "DELETE",
+                params: { employee_id, date },
             }),
             invalidatesTags: ["ManualAttendance"],
         }),
@@ -40,7 +42,7 @@ export const manualAttendanceApi = createApi({
             query: (params = {}) => ({
                 url: "hrm/manual-attendance",
                 method: "GET",
-                params,
+                params: { ...getFilterParams(), ...params },
             }),
             providesTags: ["ManualAttendance"],
         }),
@@ -63,8 +65,7 @@ export const manualAttendanceApi = createApi({
             }),
             providesTags: ["ManualAttendance"],
         }),
-
-   }),
+    }),
 });
 
 export const {

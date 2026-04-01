@@ -30,10 +30,10 @@ export const jobPositionApi = createApi({
             invalidatesTags: ["Job-position"],
         }),
         jobPositionFetch: builder.query({
-            query: () => ({
+            query: ({ params } = {}) => ({
                 url: "organization/job-positions",
                 method: "GET",
-                params: { ...getFilterParams() }, // fetch all job positons
+                params: { ...getFilterParams(), ...params }, // fetch all job positons
             }),
             providesTags: ["Job-position"],
         }),

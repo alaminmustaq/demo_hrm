@@ -2,6 +2,7 @@ import {
     handleServerValidationErrors,
     formReset,
     normalizeSelectValues,
+    prepareFilterPayload,
 } from "@/utility/helpers";
 import {
     useProjectCreateMutation,
@@ -24,17 +25,33 @@ import {
 import toast from "react-hot-toast";
 import { useForm } from "react-hook-form";
 import { useFieldArray } from "react-hook-form";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useAppDispatch } from "@/hooks/use-redux";
-import { useParams } from "next/navigation";
+// import { useParams } from "next/navigation";
 import useAuth from "@/domains/auth/hooks/useAuth";
+import {
+    useRouter,
+    usePathname,
+    useParams,
+    useSearchParams,
+} from "next/navigation";
 
 export const useProject = () => {
+    const router = useRouter();
     const dispatch = useAppDispatch();
     const { id } = useParams();
     const [projectCreate] = useProjectCreateMutation();
     const [projectUpdate] = useProjectUpdateMutation();
     const [projectDelete] = useProjectDeleteMutation();
+    // For Filters
+    const [filters, setFilters] = useState({});
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const pageFromUrl = searchParams.get("page") || "1";
+    const queryParams = {
+        ...filters,
+        ...(pageFromUrl ? { page: pageFromUrl } : {}),
+    };
     const [projectUpdateAssignedEmployees] =
         useProjectUpdateAssignedEmployeesMutation();
 
@@ -42,14 +59,24 @@ export const useProject = () => {
         data: project,
         refetch,
         isFetching,
-    } = useProjectFetchQuery(id ? { id } : "", {
-        selectFromResult: (result) => {
-            if (result?.data) {
-                dispatch(setProjectData(result?.data?.data));
-            }
-            return result;
+        isSuccess,
+    } = useProjectFetchQuery(
+        id
+            ? {
+                  id,
+                  params: queryParams,
+              }
+            : { params: queryParams },
+        {
+            refetchOnMountOrArgChange: true,
         },
-    });
+    );
+
+    useEffect(() => {
+        if (isSuccess && project?.data) {
+            dispatch(setProjectData(project.data.data));
+        }
+    }, [isSuccess, project?.data, dispatch]);
 
     //Lazy query
     const [triggerGetProject] = useLazyProjectFetchQuery();
@@ -79,7 +106,7 @@ export const useProject = () => {
     const defaultValue = {
         branch_id:
             branchSearchTemplate(
-                user?.employee?.branch ? [user?.employee?.branch] : []
+                user?.employee?.branch ? [user?.employee?.branch] : [],
             )?.at(0) ?? null,
 
         status: "in_progress",
@@ -100,6 +127,41 @@ export const useProject = () => {
     };
 
     const actions = {
+         //  FILTER
+        onFilter: async () => {
+            const values = form.getValues();
+            const payload = prepareFilterPayload(values, searchParams);
+
+            setFilters(payload);
+
+            const params = new URLSearchParams({ page: "1" });
+
+            Object.entries(payload).forEach(([key, value]) => {
+                if (Array.isArray(value)) {
+                    value.forEach((v) => params.append(`${key}[]`, v));
+                } else {
+                    params.set(key, value);
+                }
+            });
+
+            router.push(`${pathname}`);
+            refetch();
+        },
+
+        //  RESET
+        onReset: async () => {
+            const resetValues = Object.fromEntries(
+                Object.entries(form.getValues()).map(([key, value]) => [
+                    key,
+                    Array.isArray(value) ? [] : "",
+                ]),
+            );
+
+            form.reset(resetValues);
+            setFilters({});
+            await form.trigger();
+            refetch();
+        },
         onCreate: async (data) => {
             try {
                 const { openModel, employee_id, assignEmployees, ...payload } =
@@ -107,7 +169,7 @@ export const useProject = () => {
 
                 // Normalize employee_id array - extract values if objects
                 const employeeList = (employee_id || []).map((item) =>
-                    typeof item === "object" && item?.value ? item.value : item
+                    typeof item === "object" && item?.value ? item.value : item,
                 );
 
                 // Prepare assigned employees data
@@ -120,10 +182,10 @@ export const useProject = () => {
                         salary_type: emp.salary_type,
                         basic_salary: parseFloat(emp.basic_salary) || 0,
                         status: emp.status,
-                    })
+                    }),
                 );
                 console.log(assignedEmployees);
-                
+
                 // Prepare payload with normalized data
                 const preparedData = normalizeSelectValues(
                     {
@@ -131,7 +193,7 @@ export const useProject = () => {
                         employee_id: employeeList,
                         assigned_employees: assignedEmployees,
                     },
-                    ["job_position_id", "client_id", "branch_id"]
+                    ["job_position_id", "client_id", "branch_id"],
                 );
                 console.log(preparedData);
                 const response = await projectCreate(preparedData).unwrap();
@@ -157,10 +219,10 @@ export const useProject = () => {
 
             // Prepare job position data using template
             const jobPositionData = data.job_position
-                ? jobPositionsTemplate([data.job_position])?.at(0) ?? null
+                ? (jobPositionsTemplate([data.job_position])?.at(0) ?? null)
                 : null;
             const client = data.client
-                ? clientTemplate([data.client])?.at(0) ?? null
+                ? (clientTemplate([data.client])?.at(0) ?? null)
                 : null;
 
             const resetData = {
@@ -175,7 +237,7 @@ export const useProject = () => {
                 employee_id: employeeData,
                 branch_id:
                     branchSearchTemplate(data?.branch ? [data.branch] : [])?.at(
-                        0
+                        0,
                     ) ?? null,
                 client_id: client,
                 expiry_warning_days: data.expiry_warning_days || 0,
@@ -213,7 +275,7 @@ export const useProject = () => {
 
                 // Normalize employee_id array - extract values if objects
                 const employeeList = (employee_id || []).map((item) =>
-                    typeof item === "object" && item?.value ? item.value : item
+                    typeof item === "object" && item?.value ? item.value : item,
                 );
 
                 // Prepare assigned employees data
@@ -226,7 +288,7 @@ export const useProject = () => {
                         salary_type: emp.salary_type,
                         basic_salary: parseFloat(emp.basic_salary) || 0,
                         status: emp.status,
-                    })
+                    }),
                 );
 
                 // Prepare update payload
@@ -236,12 +298,12 @@ export const useProject = () => {
                         employee_id: employeeList,
                         assigned_employees: assignedEmployees,
                     },
-                    ["job_position_id", "client_id", "branch_id"]
+                    ["job_position_id", "client_id", "branch_id"],
                 );
 
                 console.log(
                     "Updating project data with assigned employees:",
-                    preparedData
+                    preparedData,
                 );
 
                 const response = await projectUpdate({
@@ -272,12 +334,11 @@ export const useProject = () => {
             }
         },
         setAssignEmployModel: async (data) => {
-            
             console.log("Hello");
             // Prevent multiple simultaneous calls
             if (isLoadingAssignEmployees.current) {
                 console.log(
-                    "setAssignEmployModel already running, skipping..."
+                    "setAssignEmployModel already running, skipping...",
                 );
                 return;
             }
@@ -299,7 +360,7 @@ export const useProject = () => {
                     // Use the existing project data if available, or fetch from server
                     const projectData =
                         project?.data?.projects?.find(
-                            (p) => p.id === data.id
+                            (p) => p.id === data.id,
                         ) || data;
 
                     console.log("Found project data:", projectData);
@@ -310,7 +371,11 @@ export const useProject = () => {
                         projectData?.assigned_employees?.map((assignedEmp) => ({
                             id: assignedEmp.employee_id,
                             employee_id: assignedEmp.employee_id,
-                            shift_id: assignedEmp.shift ? (shiftSearchTemplate([assignedEmp.shift])?.at(0) ?? null) : null,
+                            shift_id: assignedEmp.shift
+                                ? (shiftSearchTemplate([assignedEmp.shift])?.at(
+                                      0,
+                                  ) ?? null)
+                                : null,
                             name: assignedEmp.name,
                             start_date: assignedEmp.start_date,
                             end_date: assignedEmp.end_date,
@@ -321,9 +386,9 @@ export const useProject = () => {
 
                     console.log(
                         "Prepared assigned employees data:",
-                        assignedEmployeesData
+                        assignedEmployeesData,
                     );
-                    
+
                     // Replace all fields at once (safer than individual remove/append)
                     fieldArray.replace(assignedEmployeesData);
                 } else {
@@ -351,7 +416,6 @@ export const useProject = () => {
         },
 
         onUpdateAssignedEmployees: async (data) => {
-            
             try {
                 const { id, assignEmployees, ...payload } = data;
 
@@ -365,16 +429,16 @@ export const useProject = () => {
                         salary_type: emp.salary_type || "monthly",
                         basic_salary: parseFloat(emp.basic_salary) || 0,
                         status: emp.status || "active",
-                        shift_id: emp?.shift_id?.value || null 
-                    })
-                ); 
+                        shift_id: emp?.shift_id?.value || null,
+                    }),
+                );
 
                 console.log(data);
                 console.log(assignedEmployees);
 
                 console.log(
                     "Updating assigned employees only:",
-                    assignedEmployees
+                    assignedEmployees,
                 );
 
                 const response = await projectUpdateAssignedEmployees({

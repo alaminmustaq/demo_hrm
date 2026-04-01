@@ -25,8 +25,7 @@ import {
     shiftSearchTemplate,
 } from "@/utility/templateHelper";
 import { getFilterParams } from "@/utility/helpers";
-import { useMemo } from "react";
-import { useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useAppDispatch } from "@/hooks/use-redux";
 import { setEmployData } from "../model/employSlice";
 import {
@@ -60,23 +59,24 @@ export const useEmploy = () => {
         data: employ,
         refetch,
         isFetching,
+        isSuccess,
     } = useEmployFetchQuery(
         id
             ? {
                   id,
-                  params: queryParams, // <-- send your queryParams here
+                  params: queryParams,
               }
-            : { params: queryParams }, // if id is not present, still send params
+            : { params: queryParams },
         {
             refetchOnMountOrArgChange: true,
-            selectFromResult: (result) => {
-                if (result?.data) {
-                    dispatch(setEmployData(result.data.data));
-                }
-                return result;
-            },
         },
     );
+
+    useEffect(() => {
+        if (isSuccess && employ?.data) {
+            dispatch(setEmployData(employ.data.data));
+        }
+    }, [isSuccess, employ?.data, dispatch]);
 
     const { user } = useAuth();
 

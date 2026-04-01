@@ -8,9 +8,9 @@ export const leaveApplicationApi = createApi({
   tagTypes: ["leave-application"],
   endpoints: (builder) => ({
     fetchLeave: builder.query({
-      query: () => ({
+      query: ({ params } = {}) => ({
         url: "leave/leave_application",
-        params: { ...getFilterParams() },
+        params: { ...getFilterParams(), ...params },
       }),
       providesTags: ["leave-application"],
     }),

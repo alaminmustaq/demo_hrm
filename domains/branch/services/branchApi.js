@@ -30,10 +30,10 @@ export const branchApi = createApi({
             invalidatesTags: ["Branch"],
         }),
         branchFetch: builder.query({
-            query: () => ({
+            query: ({ params } = {}) => ({
                 url: "organization/branches",
                 method: "GET",
-                params: { ...getFilterParams() }, // fetch all branches
+                params: { ...getFilterParams(), ...params }, // fetch all branches
             }),
             providesTags: ["Branch"],
         }),

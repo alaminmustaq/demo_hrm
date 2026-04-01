@@ -44,7 +44,8 @@ export const useSalary = () => {
             branch_id: branchSearchTemplate(user?.employee?.branch ? [user?.employee?.branch] : [])?.at(0) ?? null,
             salary_month: new Date().toISOString().slice(0, 7), // YYYY-MM
         }
-
+    console.log(salary);
+    
     const salaryState = { 
         data: salary?.data?.items || [], 
         form:{
@@ -52,7 +53,7 @@ export const useSalary = () => {
             defaultValue: defaultValue,
         },
          refetch,
-        pagination:  salary?.pagination || {},
+        pagination:  salary?.data?.pagination || {},
         isFetching,
      }; 
     const actions = {
@@ -63,14 +64,14 @@ export const useSalary = () => {
                 let { openModel, ...other } = data;
                 let preparedData = normalizeSelectValues(other, [ 
                     "branch_id",
-                    "branch_id", 
                     "department_id",
+                    "project_id",
                     "job_position_id",
                 ]);
                 const response = await salaryCreate(preparedData).unwrap();
 
                 if (response) {
-                    toast.success("Salary generated successfully");
+                    toast.success(response?.message || "Salary generated successfully");
                     refetch();
                     formReset(form);
                     form.setValue(

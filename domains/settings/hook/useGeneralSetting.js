@@ -27,20 +27,20 @@ export const useGeneralSetting = () => {
         },
     });
     if (!isFetching && data?.data?.setting && !initialized.current) {
-    initialized.current = true;
+        initialized.current = true;
 
-    const setting = data.data.setting;
+        const setting = data.data.setting;
 
-    form.reset({
-        ...setting,
-        allowed_file_types: setting.allowed_file_types
-            ? setting.allowed_file_types.split(",")
-            : [],
-        icon: null,
-        logo: null,
-        favicon: null,
-    });
-}
+        form.reset({
+            ...setting,
+            allowed_file_types: setting.allowed_file_types
+                ? setting.allowed_file_types.split(",")
+                : [],
+            icon: null,
+            logo: null,
+            favicon: null,
+        });
+    }
 
     const actions = {
         onUpdate: async (values) => {
@@ -48,14 +48,16 @@ export const useGeneralSetting = () => {
                 const formData = new FormData();
 
                 // Text fields
-             formData.append("company_name", values.company_name);
-             formData.append(
-             "allowed_file_types",
-             Array.isArray(values.allowed_file_types)
-            ? values.allowed_file_types.join(",")
-            : ""
-            );
-
+                formData.append("company_name", values.company_name);
+                if (values.next_day_time) {
+                    formData.append("next_day_time", values.next_day_time);
+                }
+                formData.append(
+                    "allowed_file_types",
+                    Array.isArray(values.allowed_file_types)
+                        ? values.allowed_file_types.join(",")
+                        : "",
+                );
 
                 // Files only if new
                 if (values.icon instanceof File)
@@ -65,30 +67,29 @@ export const useGeneralSetting = () => {
                 if (values.favicon instanceof File)
                     formData.append("favicon", values.favicon);
                 console.log(formData);
-                
+
                 await updateGeneralSettings({
                     id: values.id,
                     formData: formData,
                 }).unwrap();
 
                 toast.success("General settings updated successfully");
-               
+
                 //  get fresh data from server
-             const refreshed = await refetch();
-             const setting = refreshed.data?.data?.setting;
+                const refreshed = await refetch();
+                const setting = refreshed.data?.data?.setting;
 
-            if (setting) {
-              form.reset({
-              ...setting,
-            allowed_file_types: setting.allowed_file_types
-            ? setting.allowed_file_types.split(",")
-            : [],
-            icon: null,
-            logo: null,
-           favicon: null,
-          });
-         }
-
+                if (setting) {
+                    form.reset({
+                        ...setting,
+                        allowed_file_types: setting.allowed_file_types
+                            ? setting.allowed_file_types.split(",")
+                            : [],
+                        icon: null,
+                        logo: null,
+                        favicon: null,
+                    });
+                }
             } catch (error) {
                 handleServerValidationErrors(error, form.setError);
             }

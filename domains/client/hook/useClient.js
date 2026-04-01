@@ -3,6 +3,7 @@ import {
     formReset,
     normalizeSelectValues,
     debounce,
+    prepareFilterPayload,
 } from "@/utility/helpers";
 
 import {
@@ -18,15 +19,36 @@ import { useForm } from "react-hook-form";
 
 import { branchSearchTemplate } from "@/utility/templateHelper";
 import useAuth from "@/domains/auth/hooks/useAuth";
+import { useState } from "react";
+import {
+    useRouter,
+    usePathname,
+    useParams,
+    useSearchParams,
+} from "next/navigation";
 
 export const useClient = () => {
+    const router = useRouter();
     const [clientCreate] = useClientCreateMutation();
     const [clientUpdate] = useClientUpdateMutation();
     const [clientDelete] = useClientDeleteMutation();
+    // For Filters
+    const [filters, setFilters] = useState({});
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const pageFromUrl = searchParams.get("page") || "1";
+    const queryParams = {
+        ...filters,
+        ...(pageFromUrl ? { page: pageFromUrl } : {}),
+    };
 
     // console.log(user);
 
-    const { data: client, refetch, isFetching } = useClientFetchQuery();
+    const {
+        data: client,
+        refetch,
+        isFetching,
+    } = useClientFetchQuery({ params: queryParams });
 
     const { user } = useAuth();
 
@@ -39,14 +61,14 @@ export const useClient = () => {
     const defaultValue = {
         branch_id:
             branchSearchTemplate(
-                user?.employee?.branch ? [user?.employee?.branch] : []
+                user?.employee?.branch ? [user?.employee?.branch] : [],
             )?.at(0) ?? null,
-             status: "active",
+        status: "active",
     };
 
     const { data: clientSearchResult } = useClientSearchQuery(
         { search: form.watch("search") },
-        { skip: !form.watch("search") }
+        { skip: !form.watch("search") },
     );
 
     const clientState = {
@@ -62,6 +84,41 @@ export const useClient = () => {
     };
 
     const actions = {
+        //  FILTER
+        onFilter: async () => {
+            const values = form.getValues();
+            const payload = prepareFilterPayload(values, searchParams);
+
+            setFilters(payload);
+
+            const params = new URLSearchParams({ page: "1" });
+
+            Object.entries(payload).forEach(([key, value]) => {
+                if (Array.isArray(value)) {
+                    value.forEach((v) => params.append(`${key}[]`, v));
+                } else {
+                    params.set(key, value);
+                }
+            });
+
+            router.push(`${pathname}`);
+            refetch();
+        },
+
+        //  RESET
+        onReset: async () => {
+            const resetValues = Object.fromEntries(
+                Object.entries(form.getValues()).map(([key, value]) => [
+                    key,
+                    Array.isArray(value) ? [] : "",
+                ]),
+            );
+
+            form.reset(resetValues);
+            setFilters({});
+            await form.trigger();
+            refetch();
+        },
         onCreate: async (data) => {
             try {
                 let { openModel, ...other } = data;
@@ -94,7 +151,7 @@ export const useClient = () => {
 
                 branch_id:
                     branchSearchTemplate(data?.branch ? [data.branch] : [])?.at(
-                        0
+                        0,
                     ) ?? null,
             });
 

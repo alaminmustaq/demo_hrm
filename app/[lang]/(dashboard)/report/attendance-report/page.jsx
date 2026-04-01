@@ -10,12 +10,15 @@ import { Button } from "@/components/ui/button";
 import ReportActions from "@/components/report/ReportActions";
 
 const AttendanceReportPage = () => {
-    const { actions, reportState } = useReport("hrm/attendance","attendance");
+    const { actions, reportState } = useReport(
+        "attendance-report/attendance-report",
+        "attendance-report",
+    );
     console.log(reportState);
-    
+
     return (
         <PageLayout>
-            <div className="bg-white p-6 rounded-md shadow mb-6">
+            <div className="bg-white p-6 rounded-md shadow mb-6 relative z-20">
                 <DynamicForm
                     form={reportState.form}
                     fields={formFields(reportState.form)}

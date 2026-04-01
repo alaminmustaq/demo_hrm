@@ -76,7 +76,7 @@ const leaveApplicationColumns = (actions) => [
       const end = row.original.end_date ? new Date(row.original.end_date) : null;
       if (start && end) {
         const diffTime = Math.abs(end - start);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // inclusive
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // inclusive
         return diffDays;
       }
       return "-";

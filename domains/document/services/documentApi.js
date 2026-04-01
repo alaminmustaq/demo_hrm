@@ -65,6 +65,23 @@ export const documentApi = createApi({
         //     providesTags: ["Document"],
         // }),
 
+         fetchDocuments: builder.query({
+                    query: ({ id, params } = {}) => {
+                        const filterParams = {
+                            ...getFilterParams(),
+                            ...params,
+                            ...(id ? { id } : {}),
+                        };
+        
+                        return {
+                           url: "document_management/documents",
+                            method: "GET",
+                            params: filterParams,
+                        };
+                    },
+                    providesTags: ["Document"],
+                }),
+
         // Fetch single document by ID (with details)
         getDocumentById: builder.query({
             query: (id) => ({
@@ -73,16 +90,16 @@ export const documentApi = createApi({
             }),
             providesTags: ["Document"],
         }),
-        fetchDocuments: builder.query({
-            query: ({ id } = {}) => ({
-                url: "document_management/documents",
-                method: "GET",
-                params: id
-                    ? { ...getFilterParams(), id }
-                    : { ...getFilterParams() },
-            }),
-            providesTags: ["Document"],
-        }),
+        // fetchDocuments: builder.query({
+        //     query: ({ id, params } = {}) => ({
+        //         url: "document_management/documents",
+        //         method: "GET",
+        //         params: id
+        //             ? { ...getFilterParams(), id }
+        //             : { ...getFilterParams() },
+        //     }),
+        //     providesTags: ["Document"],
+        // }),
     }),
 });
 

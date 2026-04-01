@@ -17,9 +17,9 @@ import useAuth from "@/domains/auth/hooks/useAuth";
 import { useMemo } from "react";
 
 export const useCompany = () => {
-    const [userCreate] = useCompanyCreateMutation();
-    const [userUpdate] = useCompanyUpdateMutation();
-    const [userDelete] = useCompanyDeleteMutation();
+    const [userCreate, { isLoading: isCreating }] = useCompanyCreateMutation();
+    const [userUpdate, { isLoading: isUpdating }] = useCompanyUpdateMutation();
+    const [userDelete, { isLoading: isDeleting }] = useCompanyDeleteMutation();
     const { loginAsCompany } = useAuth();
 
     const form = useForm({
@@ -31,7 +31,7 @@ export const useCompany = () => {
     // Only run query if searchValue is not empty
     const { data: companySearchResult } = useCompanySearchQuery(
         { search: form.watch("search") },
-        { skip: !form.watch("search") } // skip query if empty
+        { skip: !form.watch("search") }, // skip query if empty
     );
 
     const { data: company, refetch, isFetching } = useCompanyFetchQuery();
@@ -42,6 +42,7 @@ export const useCompany = () => {
         refetch,
         pagination: company?.data?.pagination || {},
         isFetching,
+        isMutating: isCreating || isUpdating || isDeleting,
     };
 
     const actions = {
@@ -84,6 +85,7 @@ export const useCompany = () => {
                 email: data.contact_info?.email || "",
                 phone: data.contact_info?.phone || "",
                 fax: data.contact_info?.fax || "",
+                next_day_time: data.next_day_time || "",
 
                 website: data.contact_info?.website || "",
                 locale: data.locale,
@@ -107,6 +109,7 @@ export const useCompany = () => {
                 description: data.business_info?.description || "",
                 employee_size: data.business_info?.employee_size || "",
                 annual_revenue: data.business_info?.annual_revenue || "",
+                balance: data.balance || "",
                 fiscal_year_start: data.business_info?.fiscal_year_start || "",
                 currency: data.business_info?.currency || "",
 

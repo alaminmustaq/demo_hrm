@@ -32,6 +32,7 @@ const CompanyPage = () => {
                     form={companiesState.form}
                     fields={fields}
                     actions={actions}
+                    isLoading={companiesState.isMutating}
                 />
             </PageLayout>
         </>

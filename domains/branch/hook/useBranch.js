@@ -1,6 +1,7 @@
 import {
     handleServerValidationErrors,
     handleServerValidationErrorsToast,
+    prepareFilterPayload,
 } from "@/utility/helpers";
 import {
     useBranchCreateMutation,
@@ -17,12 +18,33 @@ import { branchSearchTemplate } from "@/utility/templateHelper";
 import { getFilterParams } from "@/utility/helpers";
 import { useMemo } from "react";
 import useAuth from "@/domains/auth/hooks/useAuth";
+import { useState } from "react";
+import {
+    useRouter,
+    usePathname,
+    useParams,
+    useSearchParams,
+} from "next/navigation";
 
 export const useBranch = () => {
-    const [branchCreate] = useBranchCreateMutation();
-    const [branchUpdate] = useBranchUpdateMutation();
-    const [branchDelete] = useBranchDeleteMutation();
-    const { data: branch, refetch, isFetching } = useBranchFetchQuery();
+    const router = useRouter();
+    const [branchCreate, { isLoading: isCreating }] = useBranchCreateMutation();
+    const [branchUpdate, { isLoading: isUpdating }] = useBranchUpdateMutation();
+    const [branchDelete, { isLoading: isDeleting }] = useBranchDeleteMutation();
+    // For Filters
+    const [filters, setFilters] = useState({});
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const pageFromUrl = searchParams.get("page") || "1";
+    const queryParams = {
+        ...filters,
+        ...(pageFromUrl ? { page: pageFromUrl } : {}),
+    };
+    const {
+        data: branch,
+        refetch,
+        isFetching,
+    } = useBranchFetchQuery({ params: queryParams });
     const { loginAsBranch } = useAuth();
 
     const form = useForm({
@@ -30,31 +52,67 @@ export const useBranch = () => {
         reValidateMode: "onSubmit",
         shouldFocusError: true,
     });
-    const defaultValue={
-        status: 'active',
+    const defaultValue = {
+        status: "active",
         type: "branch",
         branch_type: "branch_office",
         hierarchy_level: 1,
         sort_order: 0,
-    }
+    };
 
-    const { data: branchSearchResult} = useBranchSearchQuery(
+    const { data: branchSearchResult } = useBranchSearchQuery(
         { search: form.watch("search") },
-        { skip: !form.watch("search") } // skip query if empty
+        { skip: !form.watch("search") }, // skip query if empty
     );
 
     const branchesState = {
         data: branch?.data?.branches || [],
-          form: {
+        form: {
             ...form,
-            defaultValue: defaultValue
-          },
+            defaultValue: defaultValue,
+        },
         refetch,
         pagination: branch?.data?.pagination || {},
         isFetching,
+        isMutating: isCreating || isUpdating || isDeleting,
     };
 
     const actions = {
+        //  FILTER
+        onFilter: async () => {
+            const values = form.getValues();
+            const payload = prepareFilterPayload(values, searchParams);
+
+            setFilters(payload);
+
+            const params = new URLSearchParams({ page: "1" });
+
+            Object.entries(payload).forEach(([key, value]) => {
+                if (Array.isArray(value)) {
+                    value.forEach((v) => params.append(`${key}[]`, v));
+                } else {
+                    params.set(key, value);
+                }
+            });
+
+            router.push(`${pathname}`);
+            refetch();
+        },
+
+        //  RESET
+        onReset: async () => {
+            const resetValues = Object.fromEntries(
+                Object.entries(form.getValues()).map(([key, value]) => [
+                    key,
+                    Array.isArray(value) ? [] : "",
+                ]),
+            );
+
+            form.reset(resetValues);
+            setFilters({});
+            await form.trigger();
+            refetch();
+        },
         onCreate: async (data) => {
             try {
                 let { openModel, ...other } = data;
@@ -77,13 +135,12 @@ export const useBranch = () => {
             }
         },
         onEdit: (data) => {
-
             form.reset({
                 // IDs
                 id: data.id || "",
                 parent_branch_id:
                     branchSearchTemplate(
-                        data?.parent_branch ? [data.parent_branch] : []
+                        data?.parent_branch ? [data.parent_branch] : [],
                     )?.at(0) ?? null,
 
                 // Core
@@ -179,7 +236,7 @@ export const useBranch = () => {
                         toast.error(response?.error?.data?.errors?.message);
                     } else {
                         toast.error(
-                            "Failed to delete branch. Please try again."
+                            "Failed to delete branch. Please try again.",
                         );
                     }
                 }
@@ -200,7 +257,7 @@ export const useBranch = () => {
         }, 500),
         onLoginAsBranch: async (data) => {
             console.log(data);
-            
+
             const res = await loginAsBranch(data);
 
             if (res.success) {

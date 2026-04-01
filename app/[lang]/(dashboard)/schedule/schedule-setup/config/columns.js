@@ -14,14 +14,7 @@ const scheduleSetupColumns = (actions) => [
     thClass: "!text-left",
     tdClass: "!text-left",
     cell: ({ row }) => row.original.shift?.name || "—",
-  },
-  {
-    accessorKey: "company",
-    header: "Company",
-    thClass: "!text-left",
-    tdClass: "!text-left",
-    cell: ({ row }) => row.original.company?.name || "—",
-  },
+  }, 
   {
     accessorKey: "branch",
     header: "Branch",
@@ -77,9 +70,9 @@ const scheduleSetupColumns = (actions) => [
           data={row.original}
           label="Actions"
           items={[
-            { label: "View", onClick: actions?.onView, permission: "view-holiday" },
-            { label: "Edit", onClick: actions?.onEdit, permission: "edit-holiday" },
-            { label: "Delete", onClick: actions?.onDelete, danger: true, passId: true, permission: "delete-holiday" },
+            { label: "View", onClick: actions?.onView, permission: "view-schedule" },
+            { label: "Edit", onClick: actions?.onEdit, permission: "edit-schedule" },
+            { label: "Delete", onClick: actions?.onDelete, danger: true, passId: true, permission: "delete-schedule" },
           ]}
         />
       );

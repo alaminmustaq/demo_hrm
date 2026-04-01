@@ -1,47 +1,88 @@
 import { useAppSelector } from "@/hooks/use-redux";
-export default function ApprovedFields(actions) {
+
+export default function ApprovedFields(form, actions) {
     const { user } = useAppSelector((state) => state.auth);
+
     return [
-        // =============== Branch ===============
+        // =============== Salary Generation Scope ===============
+        {
+            name: "scope_type",
+            type: "select",
+            label: "Scope Type *",
+            placeholder: "Select scope type",
+            colSpan: "col-span-12 md:col-span-6",
+            options: [
+                { label: "Company wise salary", value: "company" },
+                { label: "Project wise salary", value: "project" },
+            ],
+            handleChange: (e) => {
+                form.setValue("scope_type", e.value);
+                form.setValue("project_id", null);
+                form.setValue("department_id", null);
+            },
+            rules: { required: "Scope type is required" },
+        },
+
+        // =============== Relations ===============
         {
             name: "branch_id",
             type: "async-select",
             label: "Branch *",
+            visibility: form.watch("scope_type") === "company" || form.watch("scope_type") === "project",
             loadOptions: [
-                "organization/branches", // API endpoint
-                "branches", // data key
-                "branchSearchTemplate", // mapping/template function
+                "organization/branches",
+                "branches",
+                "branchSearchTemplate",
             ],
-            placeholder: "Select branch",
-            firstChildren: user?.employee
-                ? []
-                : [{ label: "All Branch", value: "all-branch" }],
+            placeholder: "Select",
+            firstChildren: user?.employee ? [] : [{label: "All Branch",value:"all-branch"}],
             colSpan: "col-span-12 md:col-span-6",
             rules: { required: "Branch is required" },
         },
-
-        // =============== Department ===============
         {
             name: "department_id",
             type: "async-select",
             label: "Department",
+            visibility: form.watch("scope_type") === "company",
             loadOptions: [
                 "organization/departments",
                 "departments",
                 "departmentSearchTemplate",
-                "branch_id",
+                ["branch_id", "scope_type"],
             ],
-            placeholder: "Select department",
+            placeholder: "Optional",
             colSpan: "col-span-12 md:col-span-6",
         },
+        {
+            name: "project_id",
+            type: "async-select",
+            label: "Project *",
+            visibility: form.watch("scope_type") === "project",
+            loadOptions: [
+                "projects",
+                "projects",
+                "projectTemplate",
+                ["branch_id", "scope_type"],
+            ],
+            placeholder: "Select",
+            colSpan: "col-span-12 md:col-span-6",
+            rules: {
+                validate: (value, formValues) => {
+                    if (formValues.scope_type === "project" && !value) {
+                        return "Project is required for project wise salary generation";
+                    }
+                    return true;
+                }
+            },
+        },
 
-        // =============== Salary Month ===============
+        // =============== Salary Details ===============
         {
             name: "salary_month",
-            type: "input",
+            type: "month",
             label: "Salary Month *",
             colSpan: "col-span-12 md:col-span-6",
-            inputProps: { type: "month" },
+            inputProps: { type: "month" }, 
             rules: { required: "Salary month is required" },
         },
 

@@ -1,57 +1,21 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQuery } from "@/utility/baseQuery";
 import { getFilterParams } from "@/utility/helpers";
-console.log(getFilterParams);
 export const allNotificationApi = createApi({
-  reducerPath: "ToolCategory",
+  reducerPath: "AllNotification",
   baseQuery,
-  tagTypes: ["ToolCategory"],
+  tagTypes: ["AllNotification"],
   endpoints: (builder) => ({
-    fetchCategories: builder.query({
-      query: () => ({
-        url: "inventory/tool-categories",
-        params: { ...getFilterParams() },
-      }),
-      providesTags: ["ToolCategory"],
-    }),
     fetchNotification: builder.query({
       query: () => ({
         url: "notifications/all-notification",
         params: { ...getFilterParams() },
       }),
-      providesTags: ["ToolCategory"],
-    }),
-    
-    createCategory: builder.mutation({
-      query: (data) => ({
-        url: "inventory/tool-categories",
-        method: "POST",
-        body: data,
-      }),
-      invalidatesTags: ["ToolCategory"],
-    }),
-    updateCategory: builder.mutation({
-      query: ({ id, ...data }) => ({
-        url: `inventory/tool-categories/${id}`,
-        method: "PUT",
-        body: data,
-      }),
-      invalidatesTags: ["ToolCategory"],
-    }),
-    deleteCategory: builder.mutation({
-      query: (id) => ({
-        url: `inventory/tool-categories/${id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["ToolCategory"],
+      providesTags: ["AllNotification"],
     }),
   }),
 });
 
 export const {
-  useFetchCategoriesQuery,
   useFetchNotificationQuery,
-  useCreateCategoryMutation,
-  useUpdateCategoryMutation,
-  useDeleteCategoryMutation,
 } = allNotificationApi;

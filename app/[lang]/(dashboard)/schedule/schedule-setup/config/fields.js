@@ -93,6 +93,7 @@ const fields = (actions,form) => {
             ], 
             rules: { required: "Employee type is required" }
         },
+
         {
             name: "shift_id",
             type: "async-select",

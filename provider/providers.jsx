@@ -10,12 +10,34 @@ import { usePathname } from "next/navigation";
 
 const inter = Inter({ subsets: ["latin"] });
 const Providers = ({ children }) => {
-  const { theme, radius } = useThemeStore();
-  const location = usePathname();
+    const { theme, radius } = useThemeStore();
+    const location = usePathname();
 
-  if (location === "/") {
+    if (location === "/") {
+        return (
+            <body className={cn("dash-tail-app ", inter.className)}>
+                <ThemeProvider
+                    attribute="class"
+                    enableSystem={false}
+                    defaultTheme="light"
+                >
+                    <div className={cn("h-full  ")}>
+                        {children}
+                        <ReactToaster />
+                    </div>
+                    <Toaster containerStyle={{ zIndex: 99999 }} />
+                    <SonnToaster />
+                </ThemeProvider>
+            </body>
+        );
+    }
     return (
-        <body className={cn("dash-tail-app ", inter.className)}>
+        <body
+            className={cn("dash-tail-app ", inter.className, "theme-" + theme)}
+            style={{
+                "--radius": `${radius}rem`,
+            }}
+        >
             <ThemeProvider
                 attribute="class"
                 enableSystem={false}
@@ -30,28 +52,6 @@ const Providers = ({ children }) => {
             </ThemeProvider>
         </body>
     );
-  }
-  return (
-      <body
-          className={cn("dash-tail-app ", inter.className, "theme-" + theme)}
-          style={{
-              "--radius": `${radius}rem`,
-          }}
-      >
-          <ThemeProvider
-              attribute="class"
-              enableSystem={false}
-              defaultTheme="light"
-          >
-              <div className={cn("h-full  ")}>
-                  {children}
-                  <ReactToaster />
-              </div>
-              <Toaster containerStyle={{ zIndex: 99999 }} />
-              <SonnToaster />
-          </ThemeProvider>
-      </body>
-  );
 };
 
 export default Providers;

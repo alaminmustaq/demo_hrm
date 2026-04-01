@@ -7,9 +7,9 @@ export const toolDistributionApi = createApi({
   tagTypes: ["ToolDistribution"],
   endpoints: (builder) => ({ 
     fetchToolDistributions: builder.query({
-      query: () => ({
+      query: ({ params } = {}) => ({
         url: "inventory/tool-distributions",
-        params: { ...getFilterParams() },
+        params: { ...getFilterParams(), ...params },
       }),
       providesTags: ["ToolDistribution"],
     }),

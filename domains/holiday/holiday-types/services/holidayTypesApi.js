@@ -8,9 +8,9 @@ export const holidayTypesApi = createApi({
   tagTypes: ["holiday-type"],
   endpoints: (builder) => ({
     fetchHoliday: builder.query({
-      query: () => ({
+      query: ({ params } = {}) => ({
         url: "holiday/holiday_type",
-        params: { ...getFilterParams() },
+        params: { ...getFilterParams(), ...params },
       }),
       providesTags: ["holiday-type"],
     }),

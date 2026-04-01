@@ -29,6 +29,7 @@ export function DynamicForm({
                     {fieldDefs.map((f) => {
                         // Hide the entire column if visibility is false
                         if (f.visibility === false) {
+                            
                             return null;
                         }
                         

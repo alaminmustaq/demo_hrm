@@ -15,8 +15,6 @@ export const projectApi = createApi({
             providesTags: ["Project"],
         }),
 
-
-
         projectCreate: builder.mutation({
             query: (credentials) => ({
                 url: "projects",
@@ -41,14 +39,17 @@ export const projectApi = createApi({
             invalidatesTags: ["Project"],
         }),
         projectFetch: builder.query({
-            query: ({ id } = {}) => {
-        
+            query: ({ id, params } = {}) => {
+                const filterParams = {
+                    ...getFilterParams(),
+                    ...params,
+                    ...(id ? { id } : {}),
+                };
+
                 return {
                     url: "projects",
                     method: "GET",
-                    params: id
-                        ? { ...getFilterParams(), id }
-                        : { ...getFilterParams() },
+                    params: filterParams,
                 };
             },
             providesTags: ["Project"],
@@ -81,12 +82,12 @@ export const projectApi = createApi({
 });
 
 export const {
-  useProjectCreateMutation,
-  useProjectUpdateMutation,
-  useProjectDeleteMutation,
-  useProjectSearchQuery,
-  useProjectFetchQuery,
-  useProjectGetByIdQuery,
-  useProjectUpdateAssignedEmployeesMutation,
-  useLazyProjectFetchQuery
+    useProjectCreateMutation,
+    useProjectUpdateMutation,
+    useProjectDeleteMutation,
+    useProjectSearchQuery,
+    useProjectFetchQuery,
+    useProjectGetByIdQuery,
+    useProjectUpdateAssignedEmployeesMutation,
+    useLazyProjectFetchQuery,
 } = projectApi;

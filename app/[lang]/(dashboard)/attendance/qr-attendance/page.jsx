@@ -12,7 +12,7 @@ const QrReader = dynamic(
     () => import("react-qr-reader").then((m) => m.QrReader),
     {
         ssr: false,
-    }
+    },
 );
 export default function QRAttendance() {
     const translation_state = useSelector((state) => state.auth.translation);
@@ -25,7 +25,7 @@ export default function QRAttendance() {
 
     // If permissions are array of objects
     const canManualAttendance = userPermissions.some(
-        (perm) => perm.name === "attendance-manual-manage"
+        (perm) => perm.name === "attendance-manual-manage",
     );
 
     // steps: "closed" | "scanner" | "result" | "processing"
@@ -60,10 +60,13 @@ export default function QRAttendance() {
         setErrorMsg("");
         setIsRequestingLocation(true);
 
+        // Geolocation is tied to secure contexts (HTTPS). If accessed via HTTP (except localhost), it is undefined.
         if (!navigator.geolocation) {
             setIsRequestingLocation(false);
             setLocationGranted(false);
-            setErrorMsg("Geolocation is not supported by this browser.");
+            setErrorMsg(
+                "Location access requires a secure connection (HTTPS). Please use a tunneling service like ngrok.",
+            );
             return;
         }
 
@@ -80,13 +83,30 @@ export default function QRAttendance() {
             (error) => {
                 setLocationGranted(false);
                 setIsRequestingLocation(false);
-                setErrorMsg(
-                    typeof error?.message === "string"
-                        ? error.message
-                        : "Location access denied. Enable in browser settings."
-                );
+                let specificMessage = "";
+
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        specificMessage =
+                            "Location access denied. Enable in browser settings.";
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        specificMessage =
+                            "Location information is unavailable.";
+                        break;
+                    case error.TIMEOUT:
+                        specificMessage =
+                            "The request to get user location timed out.";
+                        break;
+                    default:
+                        specificMessage =
+                            "An unknown error occurred while getting location.";
+                        break;
+                }
+
+                setErrorMsg(specificMessage);
             },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
         );
     };
 
@@ -97,74 +117,97 @@ export default function QRAttendance() {
     }, []);
 
     useEffect(() => {
-        // Get list of cameras
-        navigator.mediaDevices.enumerateDevices().then((devices) => {
-            const videoDevices = devices.filter(
-                (device) => device.kind === "videoinput"
+        // Protect against environments (like iOS HTTP or old browsers) where mediaDevices is undefined
+        if (!navigator?.mediaDevices?.enumerateDevices) {
+            console.warn(
+                "Camera access is not supported in this environment. Ensure you are using HTTPS.",
             );
+            return;
+        }
 
-            // Pick the back camera
-            const backCamera =
-                videoDevices.find((device) =>
-                    device.label.toLowerCase().includes("back")
-                ) || videoDevices[0]; // fallback to first camera if no "back" found
+        // Get list of cameras
+        navigator.mediaDevices
+            .enumerateDevices()
+            .then((devices) => {
+                const videoDevices = devices.filter(
+                    (device) => device.kind === "videoinput",
+                );
 
-            setDeviceId(backCamera?.deviceId);     
-        });
+                // Pick the back camera
+                const backCamera =
+                    videoDevices.find((device) =>
+                        device.label.toLowerCase().includes("back"),
+                    ) || videoDevices[0]; // fallback to first camera if no "back" found
+
+                setDeviceId(backCamera?.deviceId);
+            })
+            .catch((err) => {
+                console.error("Error enumerating devices:", err);
+            });
     }, []);
 
     // --- Open camera/scanner (asks for permission first) ---
- const openScanner = async () => {
-    setErrorMsg("");
-    setIsRequesting(true);
-    try {
-        // Get list of video devices
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter(d => d.kind === "videoinput");
+    const openScanner = async () => {
+        setErrorMsg("");
+        setIsRequesting(true);
+        try {
+            // 1. Explicitly request permission FIRST to ensure device labels are visible
+            const initialStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "environment" },
+                audio: false,
+            });
 
-        // Try to find a back camera
-        let backCamera = videoDevices.find(d =>
-            d.label.toLowerCase().includes("back")
-        );
+            // Stop the initial stream immediately since we just needed permission
+            initialStream.getTracks().forEach((track) => track.stop());
 
-        // Fallback to first camera if no "back" found
-        if (!backCamera) backCamera = videoDevices[0];
+            // 2. Now that we have permission, enumerate devices to find the exact back camera
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter((d) => d.kind === "videoinput");
 
-        if (!backCamera) throw new Error("No camera found");
+            // Look for back/environment camera
+            let backCamera = videoDevices.find(
+                (d) =>
+                    d.label.toLowerCase().includes("back") ||
+                    d.label.toLowerCase().includes("environment"),
+            );
 
-        // Set constraints using deviceId
-        const constraints = {
-            video: { deviceId: { exact: backCamera.deviceId } },
-            audio: false,
-        };
+            // Fallback to first camera if no "back" found
+            if (!backCamera && videoDevices.length > 0) {
+                backCamera = videoDevices[0];
+            }
 
-        // Test if we can access this camera
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            if (!backCamera) {
+                throw new Error("No camera found on this device.");
+            }
 
-        // Stop the stream immediately (we just needed permission & deviceId)
-        stream.getTracks().forEach(t => t.stop());
+            // Set the explicitly found device ID
+            setDeviceId(backCamera.deviceId);
 
-        // Set video constraints for your QR reader
-        setVideoConstraints(constraints);
-        setHasPermission(true);
-        setStep("scanner");
+            // Set precise video constraints
+            const constraints = {
+                deviceId: { exact: backCamera.deviceId },
+            };
 
-        // Remount scanner to apply new constraints
-        setMountScanner(false);
-        setTimeout(() => setMountScanner(true), 0);
+            setVideoConstraints(constraints);
+            setHasPermission(true);
+            setStep("scanner");
 
-    } catch (e) {
-        setHasPermission(false);
-        setStep("closed");
-        setErrorMsg(
-            typeof e?.message === "string"
-                ? e.message
-                : "Camera access denied or unavailable. Allow access in your browser settings."
-        );
-    } finally {
-        setIsRequesting(false);
-    }
-};
+            // Remount scanner to apply new constraints cleanly
+            setMountScanner(false);
+            setTimeout(() => setMountScanner(true), 10);
+        } catch (e) {
+            console.error("Camera access error:", e);
+            setHasPermission(false);
+            setStep("closed");
+            setErrorMsg(
+                typeof e?.message === "string"
+                    ? e.message
+                    : "Camera access denied or unavailable. Allow access in your browser settings.",
+            );
+        } finally {
+            setIsRequesting(false);
+        }
+    };
 
     // --- Handle scanning results ---
     const handleScanResult = useCallback(
@@ -193,7 +236,7 @@ export default function QRAttendance() {
                 // keep it quiet; QR readers emit frequent decode errors while searching
             }
         },
-        [coords]
+        [coords],
     );
 
     // Employee Manual Attendance
@@ -213,7 +256,7 @@ export default function QRAttendance() {
     const processAttendance = async (qrData) => {
         if (!coords) {
             setErrorMsg(
-                "Location is required for attendance. Please allow location access."
+                "Location is required for attendance. Please allow location access.",
             );
             setStep("result");
             return;
@@ -230,7 +273,7 @@ export default function QRAttendance() {
                 qrData,
                 coords.lat,
                 coords.lng,
-                branch
+                branch,
             );
         } catch (error) {
             console.error("QR Attendance processing error:", error);
@@ -305,8 +348,8 @@ export default function QRAttendance() {
             action: attendanceResult?.success
                 ? closeResult
                 : attendanceResult
-                ? retryAttendance
-                : rescan,
+                  ? retryAttendance
+                  : rescan,
             disabled: isProcessingAttendance,
         },
     };
@@ -333,11 +376,11 @@ export default function QRAttendance() {
                                             {attendanceResult.success
                                                 ? translate(
                                                       "Attendance Success",
-                                                      translation_state
+                                                      translation_state,
                                                   )
                                                 : translate(
                                                       "Attendance Failed",
-                                                      translation_state
+                                                      translation_state,
                                                   )}
                                         </div>
                                         <div
@@ -369,7 +412,9 @@ export default function QRAttendance() {
                                                         <div>
                                                             Time:{" "}
                                                             {new Date(
-                                                                attendanceResult.data.check_in_time
+                                                                attendanceResult
+                                                                    .data
+                                                                    .check_in_time,
                                                             ).toLocaleTimeString()}
                                                         </div>
                                                     )}
@@ -383,7 +428,7 @@ export default function QRAttendance() {
                                                 📋{" "}
                                                 {translate(
                                                     "Copy QR",
-                                                    translation_state
+                                                    translation_state,
                                                 )}
                                             </button>
                                             {!attendanceResult.success && (
@@ -397,7 +442,7 @@ export default function QRAttendance() {
                                                     🔄{" "}
                                                     {translate(
                                                         "Retry",
-                                                        translation_state
+                                                        translation_state,
                                                     )}
                                                 </button>
                                             )}
@@ -408,7 +453,7 @@ export default function QRAttendance() {
                                         <div className="text-xs text-slate-500">
                                             {translate(
                                                 "Scanned QR",
-                                                translation_state
+                                                translation_state,
                                             )}
                                         </div>
                                         <div className="max-h-36 overflow-auto rounded-lg bg-white p-3 text-slate-800 text-left break-words">
@@ -422,7 +467,7 @@ export default function QRAttendance() {
                                                 📋{" "}
                                                 {translate(
                                                     "Copy",
-                                                    translation_state
+                                                    translation_state,
                                                 )}
                                             </button>
                                         </div>
@@ -437,14 +482,14 @@ export default function QRAttendance() {
                                 <div className="text-sm font-medium">
                                     {translate(
                                         "Processing Attendance",
-                                        translation_state
+                                        translation_state,
                                     )}
                                     ...
                                 </div>
                                 <div className="text-xs text-slate-500">
                                     {translate(
                                         "Submitting QR data with location",
-                                        translation_state
+                                        translation_state,
                                     )}
                                 </div>
                             </div>
@@ -469,17 +514,17 @@ export default function QRAttendance() {
                             {isRequesting
                                 ? translate(
                                       "Requesting camera permission",
-                                      translation_state
+                                      translation_state,
                                   ) + "…"
                                 : hasPermission === false
-                                ? translate(
-                                      "Camera blocked. Allow access in browser settings.",
-                                      translation_state
-                                  )
-                                : translate(
-                                      "Scanner idle. Click Start Scanning.",
-                                      translation_state
-                                  )}
+                                  ? translate(
+                                        "Camera blocked. Allow access in browser settings.",
+                                        translation_state,
+                                    )
+                                  : translate(
+                                        "Scanner idle. Click Start Scanning.",
+                                        translation_state,
+                                    )}
                         </div>
                     )}
 
@@ -501,18 +546,18 @@ export default function QRAttendance() {
                             ? "Attendance recorded successfully"
                             : "Attendance failed"
                         : step === "result"
-                        ? "QR captured"
-                        : step === "processing"
-                        ? "Processing your attendance..."
-                        : step === "scanner" && hasPermission
-                        ? "Scanner ready - point camera at QR code"
-                        : "No scan yet"}
+                          ? "QR captured"
+                          : step === "processing"
+                            ? "Processing your attendance..."
+                            : step === "scanner" && hasPermission
+                              ? "Scanner ready - point camera at QR code"
+                              : "No scan yet"}
                 </p>
                 {step !== "result" && step !== "processing" && (
                     <p className="text-[11px] text-slate-500">
                         {translate(
                             "Hold the QR inside the frame; good lighting helps.",
-                            translation_state
+                            translation_state,
                         )}
                     </p>
                 )}
@@ -533,7 +578,7 @@ export default function QRAttendance() {
                         {isRequestingLocation
                             ? translate(
                                   "Requesting location",
-                                  translation_state
+                                  translation_state,
                               ) + "…"
                             : translate("Allow Location", translation_state)}
                     </button>
@@ -548,10 +593,10 @@ export default function QRAttendance() {
                         step === "result" && attendanceResult?.success
                             ? "bg-green-600 text-white hover:bg-green-700"
                             : step === "result" &&
-                              attendanceResult &&
-                              !attendanceResult.success
-                            ? "bg-red-600 text-white hover:bg-red-700"
-                            : "bg-slate-900 text-white hover:bg-slate-800"
+                                attendanceResult &&
+                                !attendanceResult.success
+                              ? "bg-red-600 text-white hover:bg-red-700"
+                              : "bg-slate-900 text-white hover:bg-slate-800"
                     }`}
                 >
                     {label}
@@ -573,7 +618,7 @@ export default function QRAttendance() {
             <div className="mt-4 text-[11px] leading-relaxed text-slate-500 border-t border-slate-100 pt-3">
                 {translate(
                     "We only read QR content for attendance. Location confirms presence. On iOS/Safari, camera needs HTTPS and a user gesture.",
-                    translation_state
+                    translation_state,
                 )}
                 {coords && (
                     <span className="block mt-1">

@@ -2,6 +2,7 @@ import {
     handleServerValidationErrors,
     formReset,
     normalizeSelectValues,
+    prepareFilterPayload,
 } from "@/utility/helpers";
 import {
     useCreateToolDistributionMutation,
@@ -13,21 +14,43 @@ import {
 import toast from "react-hot-toast";
 import { useForm } from "react-hook-form";
 import { useFieldArray } from "react-hook-form";
-import { projectTemplate, employTemplate, warehouseSearchTemplate,branchSearchTemplate } from "@/utility/templateHelper";
+import {
+    projectTemplate,
+    employTemplate,
+    warehouseSearchTemplate,
+    branchSearchTemplate,
+} from "@/utility/templateHelper";
 import useAuth from "@/domains/auth/hooks/useAuth";
+import { useState } from "react";
+import {
+    useRouter,
+    usePathname,
+    useParams,
+    useSearchParams,
+} from "next/navigation";
 
 export const useToolDistribution = () => {
+    const router = useRouter();
     const [createToolDistribution] = useCreateToolDistributionMutation();
     const [updateToolDistribution] = useUpdateToolDistributionMutation();
     const [deleteToolDistribution] = useDeleteToolDistributionMutation();
     const [returnTool] = useReturnToolMutation();
+    // For Filters
+    const [filters, setFilters] = useState({});
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const pageFromUrl = searchParams.get("page") || "1";
+    const queryParams = {
+        ...filters,
+        ...(pageFromUrl ? { page: pageFromUrl } : {}),
+    };
     const {
         data: toolDistributionsData,
         refetch,
         isFetching,
-    } = useFetchToolDistributionsQuery();
+    } = useFetchToolDistributionsQuery({ params: queryParams });
 
-     const { user } = useAuth();
+    const { user } = useAuth();
 
     const form = useForm({
         mode: "onBlur",
@@ -47,13 +70,12 @@ export const useToolDistribution = () => {
         },
     });
 
-      const defaultValue = {
-            branch_id:
-                branchSearchTemplate(
-                    user?.employee?.branch ? [user?.employee?.branch] : []
-                )?.at(0) ?? null,
-    
-        };
+    const defaultValue = {
+        branch_id:
+            branchSearchTemplate(
+                user?.employee?.branch ? [user?.employee?.branch] : [],
+            )?.at(0) ?? null,
+    };
 
     const fieldArray = useFieldArray({
         control: form.control,
@@ -73,28 +95,65 @@ export const useToolDistribution = () => {
     };
 
     const actions = {
+        //  FILTER
+        onFilter: async () => {
+            const values = form.getValues();
+            const payload = prepareFilterPayload(values, searchParams);
+
+            setFilters(payload);
+
+            const params = new URLSearchParams({ page: "1" });
+
+            Object.entries(payload).forEach(([key, value]) => {
+                if (Array.isArray(value)) {
+                    value.forEach((v) => params.append(`${key}[]`, v));
+                } else {
+                    params.set(key, value);
+                }
+            });
+
+            router.push(`${pathname}`);
+            refetch();
+        },
+
+        //  RESET
+        onReset: async () => {
+            const resetValues = Object.fromEntries(
+                Object.entries(form.getValues()).map(([key, value]) => [
+                    key,
+                    Array.isArray(value) ? [] : "",
+                ]),
+            );
+
+            form.reset(resetValues);
+            setFilters({});
+            await form.trigger();
+            refetch();
+        },
         onCreate: async (data) => {
             try {
-                const { openModel, assignTools, warehouse_id, ...payload } = data;
-        
+                const { openModel, assignTools, warehouse_id, ...payload } =
+                    data;
+
                 // Normalize warehouse_id like project_id
                 const currentPayload = normalizeSelectValues(
                     { ...payload, warehouse_id },
-                    ["project_id", "employee_id", "warehouse_id","branch_id"]
+                    ["project_id", "employee_id", "warehouse_id", "branch_id"],
                 );
-        
+
                 // Normalize each tool in the assignTools list
                 const currentAssignTools = (assignTools || []).map((item) =>
-                    normalizeSelectValues(item, ["tool_id"])
+                    normalizeSelectValues(item, ["tool_id"]),
                 );
-        
+
                 // Combine payload with assignTools
                 const finalPayload = {
                     ...currentPayload,
                     assignTools: currentAssignTools,
                 };
-        
-                const response = await createToolDistribution(finalPayload).unwrap();
+
+                const response =
+                    await createToolDistribution(finalPayload).unwrap();
                 if (response) {
                     toast.success("Tool distribution created successfully");
                     refetch();
@@ -106,59 +165,65 @@ export const useToolDistribution = () => {
                 toast.error("Failed to create tool distribution");
             }
         },
-        
 
-        onUpdate: async (data) => { 
-            
+        onUpdate: async (data) => {
             try {
-                const { openModel, type, assignTools, warehouse_id, ...payload } = data;
+                const {
+                    openModel,
+                    type,
+                    assignTools,
+                    warehouse_id,
+                    ...payload
+                } = data;
                 const { id } = payload;
-        
+
                 if (type === "return") {
                     // Include warehouse_id for each tool
-                    const assignToolsWithWarehouse = (assignTools || []).map(tool => ({
-                        ...tool,
-                        warehouse_id: warehouse_id?.value ?? null, // send the warehouse_id from the form
-                    }));
-                
+                    const assignToolsWithWarehouse = (assignTools || []).map(
+                        (tool) => ({
+                            ...tool,
+                            warehouse_id: warehouse_id?.value ?? null, // send the warehouse_id from the form
+                        }),
+                    );
+
                     const response = await returnTool({
                         id,
                         return_date: payload.return_date,
                         assignTools: assignToolsWithWarehouse,
                     }).unwrap();
-                
+
                     if (response) {
                         toast.success("Tool distribution updated successfully");
                         refetch();
                         formReset(form);
                         form.setValue("openModel", false);
                     }
-                
+
                     return 0;
                 }
-        
+
                 // Normalize each tool in the assignTools list
                 const currentAssignTools = (assignTools || []).map((item) =>
-                    normalizeSelectValues(item, ["tool_id"])
+                    normalizeSelectValues(item, ["tool_id"]),
                 );
-        
+
                 // Normalize dropdown values for API (including warehouse_id)
                 const currentPayload = normalizeSelectValues(
                     { ...payload, warehouse_id },
-                    ["project_id", "employee_id", "warehouse_id","branch_id"]
+                    ["project_id", "employee_id", "warehouse_id", "branch_id"],
                 );
-        
+
                 // Combine payload with assignTools
                 const finalPayload = {
                     ...currentPayload,
                     assignTools: currentAssignTools,
                 };
-        
+
                 const response = await updateToolDistribution({
                     id,
                     ...finalPayload,
                 }).unwrap();
-        
+
                 if (response) {
                     toast.success("Tool distribution updated successfully");
                     refetch();
@@ -170,7 +235,7 @@ export const useToolDistribution = () => {
                 toast.error("Failed to update tool distribution");
             }
         },
-        
+
         onDelete: async (id) => {
             try {
                 const response = await deleteToolDistribution(id).unwrap();
@@ -192,10 +257,10 @@ export const useToolDistribution = () => {
                 prev_quantity: tool.quantity,
                 return_quantity: tool.return_quantity || 0,
                 available_stock: tool.available_stock,
-                status: tool.status ?? 'returned',
+                status: tool.status ?? "returned",
                 notes: tool.notes,
             }));
-        
+
             form.reset({
                 id: item.id,
                 return_date: item.return_date ?? item.expected_return_date,
@@ -207,10 +272,8 @@ export const useToolDistribution = () => {
                     : null, // <-- pass warehouse here
             });
         },
-        
 
-        onEdit: (item) => { 
-            
+        onEdit: (item) => {
             // Prepare assignTools for the form using assign_tools from API response
             const assignTools = (item.assign_tools || []).map((tool) => ({
                 tool_id: tool.tool_id,
@@ -225,20 +288,20 @@ export const useToolDistribution = () => {
                 id: item.id,
                 project_id:
                     projectTemplate(item?.project ? [item.project] : [])?.at(
-                        0
+                        0,
                     ) ?? null,
                 employee_id:
                     employTemplate(item?.employee ? [item.employee] : [])?.at(
-                        0
+                        0,
                     ) ?? null,
                 branch_id:
-                branchSearchTemplate(item?.branch ? [item.branch] : [])?.at(
-                    0
-                ) ?? null,
-                warehouse_id:
-                warehouseSearchTemplate(item?.warehouse ? [item.warehouse] : [])?.at(
-                        0
+                    branchSearchTemplate(item?.branch ? [item.branch] : [])?.at(
+                        0,
                     ) ?? null,
+                warehouse_id:
+                    warehouseSearchTemplate(
+                        item?.warehouse ? [item.warehouse] : [],
+                    )?.at(0) ?? null,
                 distribution_date: item.distribution_date || "",
                 expected_return_date: item.expected_return_date || "",
                 assignTools: assignTools,

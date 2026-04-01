@@ -2,6 +2,7 @@ import {
     handleServerValidationErrors,
     formReset,
     normalizeSelectValues,
+    prepareFilterPayload,
 } from "@/utility/helpers";
 import {
     holidayTypeSearchTemplate,
@@ -21,6 +22,12 @@ import {
 import toast from "react-hot-toast";
 import { useForm, useFieldArray } from "react-hook-form";
 import { useState } from "react";
+import {
+    useRouter,
+    usePathname,
+    useParams,
+    useSearchParams,
+} from "next/navigation";
 
 
 export const useHolidayPosting = () => {
@@ -29,12 +36,23 @@ export const useHolidayPosting = () => {
         data: [],
     });
 
+     const router = useRouter();
+
     const [createHoliday] = useCreateHolidayMutation();
     const [updateHoliday] = useUpdateHolidayMutation();
     const [deleteHoliday] = useDeleteHolidayMutation();
     const [deleteGroupHoliday] = useDeleteGroupHolidayMutation();
     const [approveHoliday] = useApproveHolidayMutation();
-    const { data: holidayData, refetch, isFetching } = useFetchHolidayQuery();
+    // For Filters
+    const [filters, setFilters] = useState({});
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const pageFromUrl = searchParams.get("page") || "1";
+    const queryParams = {
+        ...filters,
+        ...(pageFromUrl ? { page: pageFromUrl } : {}),
+    };
+    const { data: holidayData, refetch, isFetching } = useFetchHolidayQuery({ params: queryParams });
 
     const form = useForm({
         mode: "onBlur",
@@ -67,6 +85,41 @@ export const useHolidayPosting = () => {
     }; 
 
     const actions = {
+          //  FILTER
+        onFilter: async () => {
+            const values = form.getValues();
+            const payload = prepareFilterPayload(values, searchParams);
+
+            setFilters(payload);
+
+            const params = new URLSearchParams({ page: "1" });
+
+            Object.entries(payload).forEach(([key, value]) => {
+                if (Array.isArray(value)) {
+                    value.forEach((v) => params.append(`${key}[]`, v));
+                } else {
+                    params.set(key, value);
+                }
+            });
+
+            router.push(`${pathname}`);
+            refetch();
+        },
+
+        //  RESET
+        onReset: async () => {
+            const resetValues = Object.fromEntries(
+                Object.entries(form.getValues()).map(([key, value]) => [
+                    key,
+                    Array.isArray(value) ? [] : "",
+                ]),
+            );
+
+            form.reset(resetValues);
+            setFilters({});
+            await form.trigger();
+            refetch();
+        },
         // Utility function to format date
         formatDateForForm: (dateString) => {
             if (!dateString) return "";

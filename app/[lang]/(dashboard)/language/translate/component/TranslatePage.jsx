@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import Card from "@/components/ui/card-snippet";
 import PageLayout from "@/components/page-layout";
 import { useLanguage } from "@/domains/language/hook/useLanguage"; // your existing hook
 import axios from "axios";
 
 const TranslatePage = ({ params }) => {
-  const { lang, id: languageId } = params; // lang = 'en', languageId = your UUID
+  const { lang, id: languageId } = use(params); // lang = 'en', languageId = your UUID
 
   const { languageState } = useLanguage();
   const translations = languageState.values || [];

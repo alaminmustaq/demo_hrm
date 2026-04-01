@@ -19,12 +19,14 @@ const ManualAttendancePage = () => {
                             label: "Add Attendance",
                             action: actions.onAddAttendance,
                             permission: "manual-attendance",
+                            color: 'primary'
                         },
-                        ApprovedSalary: {
-                            label: "Adjust Hours",
-                            action: actions.onAdjustHours,
-                            permission: "adjust-hour",
-                        },
+                        // ApprovedSalary: {
+                        //     label: "Adjust Hours",
+                        //     action: actions.onAdjustHours,
+                        //     permission: "adjust-hour",
+                        //     color: 'info'
+                        // },
                     }} 
                     columns={columns(actions)}
                     state={manualAttendanceState}

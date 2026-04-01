@@ -12,6 +12,7 @@ import { useWatch } from "react-hook-form";
 import { formReset } from "@/utility/helpers";
 import { translate } from "@/lib/utils";
 import { useSelector } from "react-redux";
+import { useState } from "react";
 
 export default function BasicModel({
     form,
@@ -20,18 +21,35 @@ export default function BasicModel({
     title,
     submitLabel,
     cancelLabel,
-    size,
+    size = "5xl",
+    isLoading = false,
     children,
 }) {
+    const [isInternalLoading, setIsInternalLoading] = useState(false);
     const translation_state = useSelector((state) => state.auth.translation);
-    title = translate(title,translation_state);
-    submitLabel = translate(submitLabel,translation_state);
-    cancelLabel = translate(cancelLabel,translation_state);
+
+    const handleFormSubmit = async () => {
+        setIsInternalLoading(true);
+        try {
+            if (form.watch("id")) {
+                await actions.onUpdate(form.getValues());
+            } else {
+                await actions.onCreate(form.getValues());
+            }
+        } finally {
+            setIsInternalLoading(false);
+        }
+    };
+
+    title = translate(title, translation_state);
+    submitLabel = translate(submitLabel, translation_state);
+    cancelLabel = translate(cancelLabel, translation_state);
 
     const openModel = useWatch({
         control: form.control,
         name: "openModel",
     });
+    console.log(form);
 
     return (
         <Dialog
@@ -43,7 +61,7 @@ export default function BasicModel({
             }}
         >
             <DialogContent
-                size="5xl"
+                size={size}
                 className="p-0 max-h-[85vh] flex flex-col overflow-hidden"
             >
                 {/* Header (fixed) */}
@@ -58,16 +76,12 @@ export default function BasicModel({
                     <DynamicForm
                         form={form}
                         fields={fields}
-                        onSubmit={() => {
-                            form.watch("id")
-                                ? actions.onUpdate(form.getValues())
-                                : actions.onCreate(form.getValues());
-                        }}
+                        onSubmit={handleFormSubmit}
                         submitLabel={submitLabel || "Submit"}
                         actions={null} // footer buttons below
                         gridCols="grid-cols-12"
                     />
-                    
+
                     {fields.length <= 0 && children}
                 </div>
 
@@ -80,11 +94,8 @@ export default function BasicModel({
                     </DialogClose>
                     <Button
                         type="submit"
-                        onClick={() =>
-                            form.watch("id")
-                                ? actions.onUpdate(form.getValues())
-                                : actions.onCreate(form.getValues())
-                        }
+                        isLoading={isLoading || isInternalLoading}
+                        onClick={handleFormSubmit}
                     >
                         {submitLabel || "Submit"}
                     </Button>

@@ -118,12 +118,16 @@ export function buildFormData(values, method = "POST") {
 
 //
 export function setFilterParams(params, data) {
+    if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
     url.searchParams.set(params, data); // set page number
     window.history.pushState({}, "", url.toString()); // update URL without reload
 }
 
 export function getFilterParams(params = false) {
+    if (typeof window === "undefined") {
+        return params ? null : {};
+    }
     const url = new URL(window.location.href);
     if (!params) {
         return Object.fromEntries(url.searchParams.entries());

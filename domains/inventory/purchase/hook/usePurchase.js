@@ -2,6 +2,7 @@ import {
     handleServerValidationErrors,
     formReset,
     normalizeSelectValues,
+    prepareFilterPayload,
 } from "@/utility/helpers";
 import {
     useCreatePurchaseMutation,
@@ -15,22 +16,40 @@ import {
     purchaseSearchTemplate,
     toolSearchTemplate,
     warehouseSearchTemplate,
-    branchSearchTemplate
+    branchSearchTemplate,
 } from "@/utility/templateHelper";
 import useAuth from "@/domains/auth/hooks/useAuth";
+import { useState } from "react";
+import {
+    useRouter,
+    usePathname,
+    useParams,
+    useSearchParams,
+} from "next/navigation";
 
 export const usePurchase = () => {
+    const router = useRouter();
     const { user } = useAuth();
 
     // ===== RTK Query hooks =====
     const [createPurchase] = useCreatePurchaseMutation();
     const [updatePurchase] = useUpdatePurchaseMutation();
     const [deletePurchase] = useDeletePurchaseMutation();
+
+    // For Filters
+    const [filters, setFilters] = useState({});
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const pageFromUrl = searchParams.get("page") || "1";
+    const queryParams = {
+        ...filters,
+        ...(pageFromUrl ? { page: pageFromUrl } : {}),
+    };
     const {
         data: purchasesData,
         refetch,
         isFetching,
-    } = useFetchPurchasesQuery();
+    } = useFetchPurchasesQuery({ params: queryParams });
 
     // ===== React Hook Form setup =====
     const form = useForm({
@@ -42,9 +61,10 @@ export const usePurchase = () => {
 
     const defaultValue = {
         quantity: 1,
-        branch_id: branchSearchTemplate(
-                        user?.employee?.branch ? [user?.employee?.branch] : []
-                    )?.at(0) ?? null,
+        branch_id:
+            branchSearchTemplate(
+                user?.employee?.branch ? [user?.employee?.branch] : [],
+            )?.at(0) ?? null,
     };
 
     const fieldArray = useFieldArray({
@@ -62,6 +82,40 @@ export const usePurchase = () => {
 
     // ===== Actions =====
     const actions = {
+        onFilter: async () => {
+            const values = form.getValues();
+            const payload = prepareFilterPayload(values, searchParams);
+
+            setFilters(payload);
+
+            const params = new URLSearchParams({ page: "1" });
+
+            Object.entries(payload).forEach(([key, value]) => {
+                if (Array.isArray(value)) {
+                    value.forEach((v) => params.append(`${key}[]`, v));
+                } else {
+                    params.set(key, value);
+                }
+            });
+
+            router.push(`${pathname}`);
+            refetch();
+        },
+
+        //  RESET
+        onReset: async () => {
+            const resetValues = Object.fromEntries(
+                Object.entries(form.getValues()).map(([key, value]) => [
+                    key,
+                    Array.isArray(value) ? [] : "",
+                ]),
+            );
+
+            form.reset(resetValues);
+            setFilters({});
+            await form.trigger();
+            refetch();
+        },
         onCreate: async (data) => {
             try {
                 // Remove UI-specific fields
@@ -92,7 +146,7 @@ export const usePurchase = () => {
                     quantity: Number(d.quantity || 0),
                     total_price: Number(d.total_price || 0),
                     net_total_price: Number(
-                        (d.net_total_price ?? d.total_price) || 0
+                        (d.net_total_price ?? d.total_price) || 0,
                     ),
                     warehouse_id:
                         d.warehouse_id?.value ??
@@ -103,7 +157,7 @@ export const usePurchase = () => {
 
                 // Validate details
                 const invalidDetails = details.filter(
-                    (d) => !d.tool_id || d.quantity < 1
+                    (d) => !d.tool_id || d.quantity < 1,
                 );
 
                 if (invalidDetails.length) {
@@ -134,7 +188,7 @@ export const usePurchase = () => {
                 let payload = normalizeSelectValues(other, [
                     "supplier_id",
                     "warehouse_id",
-                     "branch_id",
+                    "branch_id",
                 ]);
 
                 if (
@@ -156,7 +210,7 @@ export const usePurchase = () => {
                     quantity: Number(d.quantity || 0),
                     total_price: Number(d.total_price || 0),
                     net_total_price: Number(
-                        (d.net_total_price ?? d.total_price) || 0
+                        (d.net_total_price ?? d.total_price) || 0,
                     ),
                     warehouse_id:
                         d.warehouse_id?.value ??
@@ -167,7 +221,7 @@ export const usePurchase = () => {
 
                 // Validation: each tool must have quantity >= 1
                 const invalidDetails = details.filter(
-                    (d) => !d.tool_id || d.quantity < 1
+                    (d) => !d.tool_id || d.quantity < 1,
                 );
 
                 if (invalidDetails.length) {
@@ -213,11 +267,11 @@ export const usePurchase = () => {
             // Calculate totals from details
             const total_tool = (item.details || []).reduce(
                 (sum, d) => sum + Number(d.quantity || 0),
-                0
+                0,
             );
             const total_purchase_amount = (item.details || []).reduce(
                 (sum, d) => sum + Number(d.total_price || 0),
-                0
+                0,
             );
 
             form.reset({
@@ -225,7 +279,9 @@ export const usePurchase = () => {
                 invoice_no: item.invoice_no,
                 supplier_id: null, // you can map this later if supplier select is used
                 company_id: item.company_id ?? null,
-                branch_id: item.branch_id ? { label: item.branch.name, value: item.branch.id } : null,
+                branch_id: item.branch_id
+                    ? { label: item.branch.name, value: item.branch.id }
+                    : null,
                 warehouse_id: item.warehouse
                     ? { label: item.warehouse.name, value: item.warehouse.id }
                     : null,
@@ -250,7 +306,7 @@ export const usePurchase = () => {
                     note: d.note || "",
                     warehouse_id: d.warehouse
                         ? { label: d.warehouse.name, value: d.warehouse_id }
-                        : d.warehouse_id ?? null,
+                        : (d.warehouse_id ?? null),
                 })),
             });
 
