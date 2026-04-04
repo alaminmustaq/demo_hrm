@@ -12,7 +12,9 @@ const employCreate = () => {
     const { actions, employState } = useEmploy(); // Custom hook to manage user actions
     const { employData } = useAppSelector((state) => state.employ);
     useEffect(() => {
-        actions.onEdit(employData);
+        if (employData && Object.keys(employData).length > 0) {
+            actions.onEdit(employData);
+        }
     }, [employData]);
     console.log(employState);
     

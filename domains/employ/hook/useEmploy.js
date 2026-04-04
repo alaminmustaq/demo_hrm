@@ -74,7 +74,7 @@ export const useEmploy = () => {
 
     useEffect(() => {
         if (isSuccess && employ?.data) {
-            dispatch(setEmployData(employ.data.data));
+            dispatch(setEmployData(employ.data));
         }
     }, [isSuccess, employ?.data, dispatch]);
 
@@ -175,7 +175,7 @@ export const useEmploy = () => {
             }
         },
         onEdit: (mainData) => {
-            const data = mainData.employee;
+            const data = mainData?.employee;
             console.log(mainData);
             if (!data) return;
 
