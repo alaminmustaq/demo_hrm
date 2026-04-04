@@ -34,6 +34,8 @@ const nextConfig = {
 
         return config;
     },
+    allowedDevOrigins: ["192.168.0.113"],
+    reactStrictMode: false,
     images: {
         remotePatterns: [
             {

@@ -49,12 +49,12 @@ export default function QRAttendance() {
 
     // for legacy image scan
     const legacyRef = useRef(null);
+    const [scannerKey, setScannerKey] = useState(0);
 
-    // Camera constraints - will be updated dynamically
+    // Camera constraints - simpler and more robust for React 18+
     const constraints = useMemo(() => ({
         facingMode: "environment",
-        ...(deviceId ? { deviceId: { exact: deviceId } } : {})
-    }), [deviceId]);
+    }), []);
 
     // --- Location gating (unchanged behavior) ---
     const allowLocation = () => {
@@ -152,59 +152,15 @@ export default function QRAttendance() {
         setErrorMsg("");
         setIsRequesting(true);
         try {
-            // 1. Explicitly request permission FIRST to ensure device labels are visible
-            const initialStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: "environment" },
-                audio: false,
-            });
-
-            // Stop the initial stream immediately since we just needed permission
-            initialStream.getTracks().forEach((track) => track.stop());
-
-            // 2. Now that we have permission, enumerate devices to find the exact back camera
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoDevices = devices.filter((d) => d.kind === "videoinput");
-
-            // Look for back/environment camera
-            let backCamera = videoDevices.find(
-                (d) =>
-                    d.label.toLowerCase().includes("back") ||
-                    d.label.toLowerCase().includes("environment"),
-            );
-
-            // Fallback to first camera if no "back" found
-            if (!backCamera && videoDevices.length > 0) {
-                backCamera = videoDevices[0];
-            }
-
-            if (!backCamera) {
-                throw new Error("No camera found on this device.");
-            }
-
-            // Set the explicitly found device ID
-            setDeviceId(backCamera.deviceId);
-
-            // Set precise video constraints
-            const constraints = {
-                deviceId: { exact: backCamera.deviceId },
-            };
-
-            // setVideoConstraints(constraints);
-            setHasPermission(true);
+            // Simply transition to scanner step; QrReader will handle the permission prompt automatically
+            setHasPermission(true); 
             setStep("scanner");
-
-            // Remount scanner to apply new constraints cleanly
+            setScannerKey(prev => prev + 1);
             setMountScanner(false);
-            setTimeout(() => setMountScanner(true), 250);
+            setTimeout(() => setMountScanner(true), 1000);
         } catch (e) {
-            console.error("Camera access error:", e);
-            setHasPermission(false);
-            setStep("closed");
-            setErrorMsg(
-                typeof e?.message === "string"
-                    ? e.message
-                    : "Camera access denied or unavailable. Allow access in your browser settings.",
-            );
+            console.error("Scanner transition error:", e);
+            setErrorMsg("Failed to start scanner.");
         } finally {
             setIsRequesting(false);
         }
@@ -234,7 +190,18 @@ export default function QRAttendance() {
                 }
             }
             if (!!error) {
-                // keep it quiet; QR readers emit frequent decode errors while searching
+                // Diagnose common camera errors
+                const msg = error?.message || String(error);
+                if (msg.includes("NotAllowedError") || msg.includes("Permission denied")) {
+                    setErrorMsg("Camera access denied. Please check your browser settings.");
+                    setHasPermission(false);
+                    setStep("closed");
+                } else if (msg.includes("invalid state")) {
+                    // Try to recover from invalid track state by re-mounting
+                    console.warn("Invalid track state detected, attempting recovery...");
+                    setMountScanner(false);
+                    setTimeout(() => setMountScanner(true), 500);
+                }
             }
         },
         [coords],
@@ -499,15 +466,26 @@ export default function QRAttendance() {
                       hasPermission !== false &&
                       mountScanner ? (
                         <QrReader
-                            constraints={constraints}
-                            key={deviceId || "fallback"}
-                            onResult={handleScanResult}
-                            scanDelay={300}
-                            containerStyle={{ width: "100%", height: "100%" }}
+                            constraints={{ facingMode: "environment" }}
+                            key={`scanner-${scannerKey}`}
+                            onResult={(result, error) => {
+                                if (result) console.log("Scan result found:", result);
+                                if (error) {
+                                  // filter out frequent decode errors
+                                  if (!error?.message?.includes("No MultiFormat reader")) {
+                                    console.warn("Scanner error:", error);
+                                  }
+                                }
+                                handleScanResult(result, error);
+                            }}
+                            scanDelay={500}
+                            videoProps={{ playsInline: true, muted: true, autoPlay: true }}
+                            containerStyle={{ width: "288px", height: "288px", backgroundColor: "black" }}
                             videoStyle={{
                                 width: "100%",
                                 height: "100%",
-                                objectFit: "cover",
+                                objectFit: "contain",
+                                backgroundColor: "black",
                             }}
                         />
                     ) : (
