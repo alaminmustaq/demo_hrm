@@ -1,7 +1,7 @@
 "use client";
 
 import PageLayout from "@/components/page-layout";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import toast from "react-hot-toast";
 import useAttendance from "@/hooks/useAttendance";
@@ -51,9 +51,10 @@ export default function QRAttendance() {
     const legacyRef = useRef(null);
 
     // Camera constraints - will be updated dynamically
-    const [videoConstraints, setVideoConstraints] = useState({
-        facingMode: { ideal: "environment" }, // back camera by default
-    });
+    const constraints = useMemo(() => ({
+        facingMode: "environment",
+        ...(deviceId ? { deviceId: { exact: deviceId } } : {})
+    }), [deviceId]);
 
     // --- Location gating (unchanged behavior) ---
     const allowLocation = () => {
@@ -188,13 +189,13 @@ export default function QRAttendance() {
                 deviceId: { exact: backCamera.deviceId },
             };
 
-            setVideoConstraints(constraints);
+            // setVideoConstraints(constraints);
             setHasPermission(true);
             setStep("scanner");
 
             // Remount scanner to apply new constraints cleanly
             setMountScanner(false);
-            setTimeout(() => setMountScanner(true), 50);
+            setTimeout(() => setMountScanner(true), 250);
         } catch (e) {
             console.error("Camera access error:", e);
             setHasPermission(false);
@@ -297,7 +298,7 @@ export default function QRAttendance() {
         setErrorMsg("");
         setStep("scanner");
         setMountScanner(false);
-        setTimeout(() => setMountScanner(true), 50);
+        setTimeout(() => setMountScanner(true), 250);
     };
 
     const retryAttendance = async () => {
@@ -498,10 +499,7 @@ export default function QRAttendance() {
                       hasPermission !== false &&
                       mountScanner ? (
                         <QrReader
-                            constraints={{ 
-                                facingMode: "environment",
-                                ...(deviceId ? { deviceId: { exact: deviceId } } : {})
-                            }}
+                            constraints={constraints}
                             key={deviceId || "fallback"}
                             onResult={handleScanResult}
                             scanDelay={300}
