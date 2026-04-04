@@ -194,7 +194,7 @@ export default function QRAttendance() {
 
             // Remount scanner to apply new constraints cleanly
             setMountScanner(false);
-            setTimeout(() => setMountScanner(true), 10);
+            setTimeout(() => setMountScanner(true), 50);
         } catch (e) {
             console.error("Camera access error:", e);
             setHasPermission(false);
@@ -297,7 +297,7 @@ export default function QRAttendance() {
         setErrorMsg("");
         setStep("scanner");
         setMountScanner(false);
-        setTimeout(() => setMountScanner(true), 0);
+        setTimeout(() => setMountScanner(true), 50);
     };
 
     const retryAttendance = async () => {
@@ -498,8 +498,11 @@ export default function QRAttendance() {
                       hasPermission !== false &&
                       mountScanner ? (
                         <QrReader
-                            constraints={{ deviceId: { exact: deviceId } }}
-                            key="environment"
+                            constraints={{ 
+                                facingMode: "environment",
+                                ...(deviceId ? { deviceId: { exact: deviceId } } : {})
+                            }}
+                            key={deviceId || "fallback"}
                             onResult={handleScanResult}
                             scanDelay={300}
                             containerStyle={{ width: "100%", height: "100%" }}
@@ -629,24 +632,7 @@ export default function QRAttendance() {
                 )}
             </div>
 
-            {/* Hidden legacy reader for image files only (no live video) */}
-            {step === "scanner" && (
-                <div className="hidden">
-                    <QrReader
-                        ref={legacyRef}
-                        key="environment"
-                        onResult={(res, err) => {
-                            if (res) handleScanResult(res, null);
-                        }}
-                        scanDelay={500}
-                        constraints={{ deviceId: { exact: deviceId } }}
-                        containerStyle={{ width: 0, height: 0 }}
-                        videoStyle={{ width: 0, height: 0 }}
-                        // @ts-ignore — legacy method exists at runtime
-                        legacyMode={true}
-                    />
-                </div>
-            )}
+
 
             {/* Manual Attendance Button — visible only if user has permission */}
             {canManualAttendance && (
