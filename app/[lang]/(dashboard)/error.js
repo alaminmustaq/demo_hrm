@@ -9,7 +9,7 @@ export default function Error({ error, reset }) {
   return (
     <div className="space-y-4">
       <Alert color="destructive" variant="soft">
-        <Info class="h-5 w-5" />
+        <Info className="h-5 w-5" />
         <AlertDescription>Something went wrong!</AlertDescription>
       </Alert>
       <Button onClick={() => reset()} color="destructive" size="sm">

@@ -3,6 +3,7 @@
 import PageLayout from "@/components/page-layout";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import Webcam from "react-webcam";
 import toast from "react-hot-toast";
 import useAttendance from "@/hooks/useAttendance";
 import { useSelector } from "react-redux";
@@ -49,12 +50,15 @@ export default function QRAttendance() {
 
     // for legacy image scan
     const legacyRef = useRef(null);
+    const webcamRef = useRef(null);
     const [scannerKey, setScannerKey] = useState(0);
 
     // Camera constraints - simpler and more robust for React 18+
     const constraints = useMemo(() => ({
         facingMode: "environment",
     }), []);
+
+
 
     // --- Location gating (unchanged behavior) ---
     const allowLocation = () => {
@@ -206,6 +210,45 @@ export default function QRAttendance() {
         },
         [coords],
     );
+
+    // --- Native QR Scanning Loop (for maximum stability on Next 16) ---
+    useEffect(() => {
+        let active = true;
+        let interval;
+
+        const scan = async () => {
+            if (!active || !webcamRef.current?.video) return;
+            const video = webcamRef.current.video;
+
+            // Only scan if video is playing and has frames
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                try {
+                    // Try native BarcodeDetector API (fastest, no extra library needed)
+                    // @ts-ignore
+                    if (window.BarcodeDetector) {
+                        // @ts-ignore
+                        const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+                        const barcodes = await detector.detect(video);
+                        if (barcodes.length > 0 && barcodes[0].rawValue) {
+                            handleScanResult(barcodes[0].rawValue);
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    // console.error("Native scan error:", e);
+                }
+            }
+        };
+
+        if (step === "scanner" && mountScanner) {
+            interval = setInterval(scan, 500); // scan twice per second
+        }
+
+        return () => {
+            active = false;
+            clearInterval(interval);
+        };
+    }, [step, mountScanner, handleScanResult]);
 
     // Employee Manual Attendance
     const handleManualAttendance = async () => {
@@ -465,26 +508,20 @@ export default function QRAttendance() {
                     ) : step === "scanner" &&
                       hasPermission !== false &&
                       mountScanner ? (
-                        <QrReader
-                            constraints={{ facingMode: "environment" }}
-                            key={`scanner-${scannerKey}`}
-                            onResult={(result, error) => {
-                                if (result) console.log("Scan result found:", result);
-                                if (error) {
-                                  // filter out frequent decode errors
-                                  if (!error?.message?.includes("No MultiFormat reader")) {
-                                    console.warn("Scanner error:", error);
-                                  }
-                                }
-                                handleScanResult(result, error);
+                        <Webcam
+                            audio={false}
+                            key={`webcam-${scannerKey}`}
+                            ref={webcamRef}
+                            videoConstraints={{ 
+                                facingMode: "environment",
+                                width: { ideal: 1280 },
+                                height: { ideal: 720 }
                             }}
-                            scanDelay={500}
-                            videoProps={{ playsInline: true, muted: true, autoPlay: true }}
-                            containerStyle={{ width: "288px", height: "288px", backgroundColor: "black" }}
-                            videoStyle={{
+                            style={{
                                 width: "100%",
                                 height: "100%",
-                                objectFit: "contain",
+                                minHeight: "288px",
+                                objectFit: "cover",
                                 backgroundColor: "black",
                             }}
                         />
