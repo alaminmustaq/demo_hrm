@@ -1,4 +1,4 @@
-const fields = (form) => [
+const fields = (form, user) => [
     {
         name: "date_from",
         type: "date",
@@ -11,6 +11,7 @@ const fields = (form) => [
         label: "To Date",
         colSpan: "col-span-12 md:col-span-3",
     }, 
+    ...(user?.role_id === 3 ? [] : [
     {
         name: "branch_id",
         type: "async-select",
@@ -54,6 +55,7 @@ const fields = (form) => [
             },
         ],  
     }, 
+    ]),
     {
         name: "status",
         type: "select",
@@ -68,15 +70,15 @@ const fields = (form) => [
             { label: "On Leave", value: "on_leave" },
         ],
     },
-
-    {
-        name: "employee_ids",
-        type: "multi-async-select",
-        label: "Employees",
-        loadOptions: ["hrm/employees", "employees", "employTemplate"], 
-        colSpan: "col-span-12 md:col-span-3", 
-    },  
-    
+    ...(user?.role_id === 3 ? [] : [
+        {
+            name: "employee_ids",
+            type: "multi-async-select",
+            label: "Employees",
+            loadOptions: ["hrm/employees", "employees", "employTemplate"], 
+            colSpan: "col-span-12 md:col-span-3", 
+        },  
+    ]),
     // Future
     // {
     //     name: "status",

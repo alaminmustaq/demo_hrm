@@ -15,6 +15,11 @@ export const jobListApi = createApi({
             providesTags: ["job-list"],
         }),
 
+        fetchJobDetails: builder.query({
+            query: (id) => `recruitment/job_list/${id}`,
+            providesTags: (result, error, id) => [{ type: "job-list", id }],
+        }),
+
         createJob: builder.mutation({
             query: (data) => ({
                 url: "recruitment/job_list",
@@ -30,7 +35,10 @@ export const jobListApi = createApi({
                 method: "PUT",
                 body: data,
             }),
-            invalidatesTags: ["job-list"],
+            invalidatesTags: (result, error, { id }) => [
+                { type: "job-list", id },
+                "job-list",
+            ],
         }),
 
         deleteJob: builder.mutation({
@@ -45,6 +53,7 @@ export const jobListApi = createApi({
 
 export const {
     useFetchJobListQuery,
+    useFetchJobDetailsQuery,
     useCreateJobMutation,
     useUpdateJobMutation,
     useDeleteJobMutation,

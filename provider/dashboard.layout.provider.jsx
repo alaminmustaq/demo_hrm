@@ -13,6 +13,7 @@ import MobileSidebar from "@/components/partials/sidebar/mobile-sidebar";
 import HeaderSearch from "@/components/header-search";
 import { useMounted } from "@/hooks/use-mounted";
 import LayoutLoader from "@/components/layout-loader";
+import QRAttendanceFAB from "@/components/qr-attendance-fab";
 const DashBoardLayoutProvider = ({ children, trans }) => {
   const { collapsed, sidebarType, setCollapsed, subMenu } = useSidebar();
   const [open, setOpen] = React.useState(false);
@@ -55,6 +56,7 @@ const DashBoardLayoutProvider = ({ children, trans }) => {
         </div>
         <Footer trans={trans} />
         <ThemeCustomize trans={trans} />
+        <QRAttendanceFAB trans={trans} />
       </>
     );
   }
@@ -82,6 +84,7 @@ const DashBoardLayoutProvider = ({ children, trans }) => {
         </div>
         <Footer />
         <ThemeCustomize />
+        <QRAttendanceFAB trans={trans} />
       </>
     );
   }
@@ -116,6 +119,7 @@ const DashBoardLayoutProvider = ({ children, trans }) => {
         </div>
         <Footer trans={trans} />
         <ThemeCustomize trans={trans} />
+        <QRAttendanceFAB trans={trans} />
       </>
     );
   }
@@ -148,6 +152,7 @@ const DashBoardLayoutProvider = ({ children, trans }) => {
       </div>
       <Footer handleOpenSearch={() => setOpen(true)} trans={trans} />
       {isMobile && <ThemeCustomize />}
+      <QRAttendanceFAB trans={trans} />
     </>
   );
 };

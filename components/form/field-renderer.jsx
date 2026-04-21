@@ -18,8 +18,13 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Plus, Trash2 } from "lucide-react";
 
+import { Switch } from "@/components/ui/switch";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+
 import DynamicAsyncSelect from "./dynamic-async-select";
 import GroupFormPaginatedField from "./group-form-paginated";
+import CustomQuestionsBuilder from "./custom-questions-builder";
+import ScreeningQuestionsBuilder from "./screening-questions-builder";
 import { translate } from "@/lib/utils";
 import Select from "react-select";
 import dynamic from "next/dynamic";
@@ -174,7 +179,7 @@ const FieldRenderer = ({ fieldConfig, form }) => {
                                     isDisabled={!!resolvedDisabled}
                                     getOptionLabel={getOptLabel}
                                     getOptionValue={getOptValue}
-                                    id
+                                    id={name}
                                     isClearable
                                     onChange={(selectedOption) => {
                                         const value = handleChange
@@ -267,6 +272,55 @@ const FieldRenderer = ({ fieldConfig, form }) => {
                                         </label>
                                     ) : null}
                                 </div>
+                            ) : type === "switch" ? (
+                                <div className="flex items-center space-x-2 mt-2">
+                                    <Switch
+                                        checked={!!field.value}
+                                        onCheckedChange={(checked) => {
+                                            field.onChange(checked);
+                                            if (handleChange) {
+                                                handleChange(checked, form);
+                                            }
+                                        }}
+                                        disabled={resolvedDisabled}
+                                        id={`${name}-switch`}
+                                    />
+                                    {label || placeholder ? (
+                                        <label
+                                            htmlFor={`${name}-switch`}
+                                            className="text-sm font-medium leading-none cursor-pointer"
+                                        >
+                                            {label || placeholder}
+                                        </label>
+                                    ) : null}
+                                </div>
+                            ) : type === "card" ? (
+                                <Card>
+                                    {(label || placeholder) && (
+                                        <CardHeader className="pb-3 border-b mb-3">
+                                            <CardTitle className="text-base font-semibold">{label || placeholder}</CardTitle>
+                                        </CardHeader>
+                                    )}
+                                    <CardContent className={label || placeholder ? "pt-0" : "pt-4"}>
+                                        <div className="grid grid-cols-12 gap-x-4 gap-y-4">
+                                            {(fieldConfig.childFields || []).map((childField) => (
+                                                <div
+                                                    key={childField.name || childField.label}
+                                                    className={cn(childField.colSpan || "col-span-12")}
+                                                >
+                                                    <FieldRenderer
+                                                        fieldConfig={{ ...childField, index }}
+                                                        form={form}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ) : type === "custom-questions" ? (
+                                <CustomQuestionsBuilder field={field} />
+                            ) : type === "screening-questions" ? (
+                                <ScreeningQuestionsBuilder field={field} />
                             ) : type === "file" ? (
                                 <div>
                                     <Input
@@ -393,7 +447,7 @@ const FieldRenderer = ({ fieldConfig, form }) => {
                                     {placeholder || label || "Button"}
                                 </Button>
                             ) : (
-                                <>
+                                <div className="space-y-2">
                                     <Input
                                         type={
                                             type === "password"
@@ -461,7 +515,7 @@ const FieldRenderer = ({ fieldConfig, form }) => {
                                             )}
                                         </p>
                                     )}
-                                </>
+                                </div>
                             )}
                         </FormControl>
                         {description ? (

@@ -2,17 +2,17 @@
 
 import PageLayout from "@/components/page-layout";
 import BasicTableLayout from "@/components/table/basic-table-layout";
-import BasicModel from "@/components/model/basic-model";
 import columns from "./config/columns";
-import fields from "./config/fields";
 import { DynamicForm } from "@/components/form/dynamic-form";
 import filterFields from "./config/filterFields";
 import ReportActions from "@/components/report/ReportActions";
 import { useState } from "react";
 import CollapsibleToggleButton from "@/components/ui/CollapsibleToggleButton";
 import { useJobList } from "@/domains/recruitment/job-list/hook/useJobList";
+import { useParams } from "next/navigation";
 
 const JobListPage = () => {
+    const { lang } = useParams();
     const { actions, jobListState } = useJobList();
     const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -48,21 +48,8 @@ const JobListPage = () => {
                 addPermission={"view-project"}
                 addButtonLabel="Add Job"
                 columns={columns(actions)}
+                to={`/${lang}/recruitment/job-list/create`}
                 state={jobListState}
-            />
-
-            <BasicModel
-                title={
-                    jobListState?.form?.watch("id") ? "Edit Job" : "Create Job"
-                }
-                submitLabel={
-                    jobListState?.form?.watch("id") ? "Update" : "Create"
-                }
-                cancelLabel="Cancel"
-                size="3xl"
-                form={jobListState.form}
-                fields={fields}
-                actions={actions}
             />
         </PageLayout>
     );

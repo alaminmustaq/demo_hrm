@@ -22,7 +22,7 @@ const employCreate = () => {
         <PageLayout>
             <Card>
                 <DynamicTabForm
-                    isServerValidated={true}
+                    isServerValidated={false}
                     fields={fields}
                     form={employState.form}
                     actions={actions}

@@ -24,6 +24,7 @@ export default function BasicModel({
     size = "5xl",
     isLoading = false,
     children,
+    alwaysShowChildren = false, // New prop to control children visibility
 }) {
     const [isInternalLoading, setIsInternalLoading] = useState(false);
     const translation_state = useSelector((state) => state.auth.translation);
@@ -82,7 +83,7 @@ export default function BasicModel({
                         gridCols="grid-cols-12"
                     />
 
-                    {fields.length <= 0 && children}
+                    {(alwaysShowChildren || fields.length <= 0) && children}
                 </div>
 
                 {/* Footer (fixed) */}

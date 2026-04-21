@@ -51,7 +51,7 @@ const jobListColumns = (actions) => [
                 items={[
                     {
                         label: "Edit",
-                        onClick: actions?.onEdit,
+                        onClick: actions?.onEditDetails,
                         permission: "view-project",
                     },
                     {

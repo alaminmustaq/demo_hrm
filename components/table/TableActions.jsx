@@ -28,14 +28,14 @@ export const TableActions = ({
   items = [],
   label = "Actions",
   alignmentClass = "flex justify-center",
-  onLoginAsCompany, 
-  onLoginAsBranch, 
+  onLoginAsCompany,
+  onLoginAsBranch,
 }) => {
   const translation_state = useSelector((state) => state.auth.translation);
   const showSrOnlySpan = alignmentClass !== "flex justify-center";
   const { user } = useAppSelector((state) => state.auth);
 
-  const permissionNames = user?.permissions?.map(p => p.name) || [];  
+  const permissionNames = user?.permissions?.map(p => p.name) || [];
   // console.log(exists);
   return (
     <div className={alignmentClass}>
@@ -71,7 +71,9 @@ export const TableActions = ({
           )}
 
           {/* Dynamic action items */}
-          {items.map((item, i) => (
+          {items
+            .filter(item => !item.hidden) // Filter out hidden items
+            .map((item, i) => (
             permissionNames.includes(item.permission) &&
             <DropdownMenuItem
               key={i}

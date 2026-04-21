@@ -14,6 +14,7 @@ const DynamicTabForm = ({
     form,
     actions,
     isServerValidated = false,
+    stepperClassName = "",
 }) => {
     useEffect(() => {
         form.reset(form.defaultValue);
@@ -51,13 +52,14 @@ const DynamicTabForm = ({
                     ? await actions.onUpdate(form.getValues())
                     : await actions.onCreate(form.getValues());
 
-                if (response?.success) {
+                if (response) {
                     valid = true;
                 } else {
                     valid = false;
                 }
             } else {
-                valid = await form.trigger();
+                const currentFields = fieldDefs[activeStep]?.fields.map((f) => f.name) || [];
+                valid = currentFields.length > 0 ? await form.trigger(currentFields) : true;
             }
 
             if (valid) {
@@ -87,7 +89,8 @@ const DynamicTabForm = ({
     const isTablet = useMediaQuery("(max-width: 1024px)");
     return (
         <>
-            <Stepper current={activeStep} direction={isTablet && "vertical"}>
+            <div className={cn(stepperClassName)}>
+                <Stepper current={activeStep} direction={isTablet && "vertical"}>
                 {steps.map((label, index) => {
                     const stepProps = {};
                     const labelProps = {};
@@ -116,50 +119,46 @@ const DynamicTabForm = ({
                     );
                 })}
             </Stepper>
+        </div>
 
             <React.Fragment>
                 <Form {...form}>
                     <form>
                         <div className="grid grid-cols-12 gap-4">
-                            {fieldDefs.map((item, index) => {
-                                return (
-                                    <>
-                                        {activeStep === index && (
-                                            <>
-                                                <div className="col-span-12 mb-4 mt-6">
-                                                    <h4 className="text-sm font-medium text-default-600">
-                                                        {item.label}
-                                                    </h4>
-                                                    <p className="text-xs text-default-600 mt-1">
-                                                        {item.description}
-                                                    </p>
-                                                </div>
+                            {fieldDefs[activeStep] && (
+                                <React.Fragment key={fieldDefs[activeStep].key}>
+                                    <div className="col-span-12 mb-4 mt-6">
+                                        <h4 className="text-sm font-medium text-default-600">
+                                            {fieldDefs[activeStep].label}
+                                        </h4>
+                                        <p className="text-xs text-default-600 mt-1">
+                                            {fieldDefs[activeStep].description}
+                                        </p>
+                                    </div>
 
-                                                {item.fields.map((f) => (
-                                                    <div
-                                                        key={f.name}
-                                                        className={cn(
-                                                            f.colSpan ||
-                                                                "col-span-12",
-                                                        )}
-                                                    >
-                                                        <FieldRenderer
-                                                            fieldConfig={f}
-                                                            form={form}
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </>
-                                        )}
-                                    </>
-                                );
-                            })}
+                                    {fieldDefs[activeStep].fields.map((f) => (
+                                        <div
+                                            key={f.name}
+                                            className={cn(
+                                                f.colSpan ||
+                                                    "col-span-12",
+                                            )}
+                                        >
+                                            <FieldRenderer
+                                                fieldConfig={f}
+                                                form={form}
+                                            />
+                                        </div>
+                                    ))}
+                                </React.Fragment>
+                            )}
                         </div>
                     </form>
                 </Form>
 
                 <div className="flex pt-2 ">
                     <Button
+                        type="button"
                         size="xs"
                         variant="outline"
                         color="secondary"
@@ -176,6 +175,7 @@ const DynamicTabForm = ({
                         {activeStep === steps.length - 1 ||
                         activeStep === steps.length ? (
                             <Button
+                                type="button"
                                 size="xs"
                                 variant="outline"
                                 color="success"
@@ -184,6 +184,9 @@ const DynamicTabForm = ({
                                 onClick={async () => {
                                     setIsInternalLoading(true);
                                     try {
+                                        const isValid = await form.trigger();
+                                        if (!isValid) return;
+
                                         const response = form.watch("id")
                                             ? await actions.onUpdate(
                                                   form.getValues(),
@@ -208,6 +211,7 @@ const DynamicTabForm = ({
                             </Button>
                         ) : (
                             <Button
+                                type="button"
                                 size="xs"
                                 variant="outline"
                                 color="secondary"

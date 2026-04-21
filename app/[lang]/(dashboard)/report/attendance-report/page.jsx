@@ -8,12 +8,14 @@ import columns from "./config/columns";
 import { useReport } from "@/domains/report/hook/useReport";
 import { Button } from "@/components/ui/button";
 import ReportActions from "@/components/report/ReportActions";
+import useAuth from "@/domains/auth/hooks/useAuth";
 
 const AttendanceReportPage = () => {
     const { actions, reportState } = useReport(
         "attendance-report/attendance-report",
         "attendance-report",
     );
+    const { user } = useAuth();
     console.log(reportState);
 
     return (
@@ -21,7 +23,7 @@ const AttendanceReportPage = () => {
             <div className="bg-white p-6 rounded-md shadow mb-6 relative z-20">
                 <DynamicForm
                     form={reportState.form}
-                    fields={formFields(reportState.form)}
+                    fields={formFields(reportState.form, user)}
                     onSubmit={() => actions.handleAction("filter")}
                 />
 
